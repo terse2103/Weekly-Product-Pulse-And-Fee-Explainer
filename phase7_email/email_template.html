@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INDMoney Weekly Product Pulse</title>
+  <style>
+    /* ── Reset ─────────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f0f4f8;
+      color: #1a202c;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Outer wrapper ──────────────────────────────────── */
+    .wrapper {
+      max-width: 640px;
+      margin: 0 auto;
+      background: #ffffff;
+    }
+
+    /* ── Header band ────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d6efd 100%);
+      padding: 36px 40px 28px;
+      text-align: center;
+    }
+
+    .header-logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.60);
+      margin-bottom: 8px;
+    }
+
+    .header-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+
+    .header-subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
+    }
+
+    /* ── Greeting ───────────────────────────────────────── */
+    .greeting {
+      padding: 28px 40px 0;
+      font-size: 15px;
+      color: #4a5568;
+    }
+
+    /* ── Body content ───────────────────────────────────── */
+    .body-content {
+      padding: 24px 40px 32px;
+    }
+
+    /* Heading hierarchy inside the markdown content */
+    .note-body h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e3a5f;
+      margin: 24px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .note-body h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #2d3748;
+      margin: 20px 0 8px;
+    }
+
+    .note-body h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #2d3748;
+      margin: 16px 0 6px;
+    }
+
+    .note-body p {
+      margin: 8px 0;
+      font-size: 14px;
+      color: #4a5568;
+    }
+
+    /* ── Section cards ──────────────────────────────────── */
+    .note-body ul {
+      list-style: none;
+      margin: 10px 0 16px;
+      padding: 0;
+    }
+
+    .note-body ul li {
+      position: relative;
+      padding: 10px 14px 10px 36px;
+      margin-bottom: 8px;
+      background: #f7fafc;
+      border-left: 4px solid #0d6efd;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #2d3748;
+    }
+
+    .note-body ul li::before {
+      content: "▸";
+      position: absolute;
+      left: 12px;
+      color: #0d6efd;
+      font-size: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* Blockquotes = user quotes */
+    .note-body blockquote {
+      margin: 10px 0;
+      padding: 12px 16px;
+      background: #eef6ff;
+      border-left: 4px solid #63b3ed;
+      border-radius: 6px;
+      font-size: 14px;
+      font-style: italic;
+      color: #2b6cb0;
+    }
+
+    /* Ordered lists */
+    .note-body ol {
+      padding-left: 22px;
+      margin: 10px 0 16px;
+    }
+
+    .note-body ol li {
+      font-size: 14px;
+      color: #4a5568;
+      margin-bottom: 6px;
+      padding-left: 4px;
+    }
+
+    /* Bold text */
+    .note-body strong {
+      color: #1e3a5f;
+    }
+
+    /* ── Divider ────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: #e2e8f0;
+      margin: 0 40px;
+    }
+
+    /* ── CTA button ─────────────────────────────────────── */
+    .cta-section {
+      padding: 28px 40px;
+      text-align: center;
+    }
+
+    .cta-text {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 16px;
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .footer {
+      background: #f7fafc;
+      padding: 24px 40px;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .footer p {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-bottom: 4px;
+    }
+
+    .footer a {
+      color: #0d6efd;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <!-- ── Header ─────────────────────────────────────── -->
+    <div class="header">
+      <div class="header-logo">INDMoney · Product Intelligence</div>
+      <div class="header-title">📋 Weekly Product Pulse</div>
+      <div class="header-subtitle">{{WEEK_LABEL}}</div>
+    </div>
+
+    <!-- ── Greeting ───────────────────────────────────── -->
+    <div class="greeting">
+      <p>Hi {{RECIPIENT_NAME}},</p>
+      <p style="margin-top:8px;">
+        Here's your weekly snapshot of what users are saying about INDMoney on the Play Store.
+        The note below was automatically generated from the latest {{REVIEW_COUNT}} reviews.
+      </p>
+    </div>
+
+    <!-- ── Note content ───────────────────────────────── -->
+    <div class="body-content">
+      <div class="note-body">
+        {{NOTE_BODY}}
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── CTA ────────────────────────────────────────── -->
+    <div class="cta-section">
+      <p class="cta-text">
+        This note is generated automatically every Sunday from Play Store reviews.<br/>
+        Reply to this email if you have feedback on the pulse format.
+      </p>
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────── -->
+    <div class="footer">
+      <p>© {{YEAR}} INDMoney Weekly Product Pulse · Auto-generated report</p>
+      <p>You are receiving this because you were listed as a recipient in the Web UI.</p>
+    </div>
+
+  </div>
+</body>
+</html>

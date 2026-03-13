@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INDMoney Weekly Product Pulse</title>
+  <meta name="description" content="View and share the INDMoney Weekly Product Pulse — a scannable one-page summary of the latest Play Store reviews." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <!-- marked.js — lightweight Markdown → HTML renderer (no build step needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- ─── Ambient glow blobs ────────────────────────────────────────────── -->
+  <div class="blob blob-1" aria-hidden="true"></div>
+  <div class="blob blob-2" aria-hidden="true"></div>
+
+  <div class="page-wrapper">
+
+    <!-- ─── Header ──────────────────────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="logo-group">
+        <span class="logo-icon" aria-hidden="true">📋</span>
+        <div>
+          <h1 class="site-title">INDMoney Weekly Pulse</h1>
+          <p class="site-subtitle">Play Store · Voice of the Customer</p>
+        </div>
+      </div>
+      <div id="header-meta" class="header-meta">
+        <span id="badge-date" class="badge badge-date">—</span>
+      </div>
+    </header>
+
+    <!-- ─── Main layout ──────────────────────────────────────────────────── -->
+    <main class="main-layout">
+
+      <!-- Left column: note viewer -->
+      <section class="note-panel" aria-label="Weekly Note">
+        <div class="panel-header">
+          <span class="panel-icon" aria-hidden="true">📄</span>
+          <h2 class="panel-title">This Week's Note</h2>
+        </div>
+
+
+        <!-- Skeleton loader -->
+        <div id="note-skeleton" class="skeleton-wrapper" aria-live="polite" aria-label="Loading note">
+          <div class="skeleton skeleton-lg"></div>
+          <div class="skeleton skeleton-md"></div>
+          <div class="skeleton skeleton-sm"></div>
+          <div class="skeleton skeleton-lg"></div>
+          <div class="skeleton skeleton-md"></div>
+          <div class="skeleton skeleton-sm"></div>
+        </div>
+
+        <!-- Note content -->
+        <div id="note-content" class="note-content" hidden aria-live="polite"></div>
+
+        <!-- Error state -->
+        <div id="note-error" class="empty-state" hidden>
+          <span class="empty-icon" aria-hidden="true">⚠️</span>
+          <p class="empty-title">Note not available</p>
+          <p class="empty-desc">Run Phase 5 to generate the weekly note first.</p>
+        </div>
+      </section>
+
+      <!-- Right column: send panel -->
+      <aside class="send-panel">
+
+        <!-- Pipeline status card -->
+        <div class="card status-card" id="status-card">
+          <h3 class="card-title">
+            <span aria-hidden="true">⚙️</span> Pipeline Status
+          </h3>
+          <div class="status-row">
+            <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+            <span id="status-label" class="status-label">Checking…</span>
+          </div>
+          <p id="status-detail" class="status-detail"></p>
+        </div>
+
+        <!-- Recipient form card -->
+        <div class="card form-card">
+          <h3 class="card-title">
+            <span aria-hidden="true">✉️</span> Send This Pulse
+          </h3>
+          <form id="send-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="recipient-name">Recipient Name</label>
+              <input
+                id="recipient-name"
+                name="recipient_name"
+                type="text"
+                class="form-input"
+                placeholder="e.g. Priya Sharma"
+                autocomplete="name"
+                required
+              />
+              <span id="name-error" class="field-error" aria-live="polite"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="recipient-email">Recipient Email</label>
+              <input
+                id="recipient-email"
+                name="recipient_email"
+                type="email"
+                class="form-input"
+                placeholder="e.g. priya@company.com"
+                autocomplete="email"
+                required
+              />
+              <span id="email-error" class="field-error" aria-live="polite"></span>
+            </div>
+
+            <button id="btn-send" class="btn-primary" type="submit">
+              <span id="btn-text">Send Weekly Pulse</span>
+              <span id="btn-spinner" class="spinner" hidden aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <!-- Toast notification -->
+          <div id="toast" class="toast" role="alert" aria-live="assertive" hidden>
+            <span id="toast-icon" aria-hidden="true"></span>
+            <span id="toast-message"></span>
+          </div>
+        </div>
+
+        <!-- Quick stats card (populated by JS) -->
+        <div class="card stats-card" id="stats-card" hidden>
+          <h3 class="card-title">
+            <span aria-hidden="true">📊</span> Note Stats
+          </h3>
+          <ul class="stats-list" id="stats-list"></ul>
+        </div>
+
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Built with FastAPI &amp; Vanilla JS</p>
+      <p>
+        <a href="/docs" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
+        &nbsp;·&nbsp;
+        <a href="/api/note" target="_blank" rel="noopener" class="footer-link">Raw Note JSON</a>
+      </p>
+    </footer>
+
+  </div><!-- /.page-wrapper -->
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
