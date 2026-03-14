@@ -2,8 +2,8 @@ name: Weekly Product Pulse
 
 on:
   schedule:
-    - cron: '0 4 * * 0'   # Every Sunday at 4:00 AM UTC (9:30 AM IST)
-  workflow_dispatch:        # Allow manual trigger
+    - cron: '0 4 * * 0'
+  workflow_dispatch: {}
 
 jobs:
   run-pulse:
