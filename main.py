@@ -21,13 +21,22 @@ def run_pipeline(recipient_name=None, recipient_email=None):
     clean = filter_pii(normalized)         # Phase 2b
     print(f"Phase 2b: PII filtered. Remaining: {len(clean)} reviews.")
     
-    themes = generate_themes(clean)        # Phase 3
+    # Phase 3 reads clean_reviews.json from disk (written by Phase 2b)
+    themes = generate_themes()
     print(f"Phase 3: Generated {len(themes)} themes.")
     
-    tagged = classify_reviews(clean, themes)  # Phase 4
+    # Phase 4 reads clean_reviews.json + themes.json from disk
+    classify_reviews()
     print("Phase 4: Classified reviews into themes.")
     
-    note = generate_note(tagged, themes)   # Phase 5
+    # Phase 5 expects themed_reviews and themes as arguments
+    # Load them from disk (written by Phase 4)
+    import json
+    with open("data/themed_reviews.json", "r", encoding="utf-8") as f:
+        tagged = json.load(f)
+    
+    note_result = generate_note(tagged, themes)   # Phase 5 returns (note, word_count)
+    note = note_result[0] if isinstance(note_result, tuple) else note_result
     print("Phase 5: Generated weekly note.")
     
     # Phase 6 (Web UI) runs separately as a FastAPI server
