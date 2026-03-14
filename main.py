@@ -4,7 +4,8 @@ import sys
 
 # Importing from specific modules to avoid __init__.py issues
 from phase1_ingestion.fetch_reviews import fetch_reviews
-from phase2_cleaning import clean_text, filter_pii
+from phase2_cleaning.deduplicator import run_phase2a
+from phase2_cleaning.pii_filter import run_pii_filtering
 from phase3_theme_generation.theme_generator import generate_themes
 from phase4_grouping.theme_classifier import classify_reviews
 from phase5_note_generation.note_generator import generate_note
@@ -15,10 +16,10 @@ def run_pipeline(recipient_name=None, recipient_email=None):
     raw = fetch_reviews()                  # Phase 1
     print(f"Phase 1: Fetched {len(raw)} reviews.")
     
-    normalized = clean_text(raw)           # Phase 2a
+    normalized = run_phase2a()             # Phase 2a
     print(f"Phase 2a: Normalized to {len(normalized)} reviews.")
     
-    clean = filter_pii(normalized)         # Phase 2b
+    clean = run_pii_filtering()            # Phase 2b
     print(f"Phase 2b: PII filtered. Remaining: {len(clean)} reviews.")
     
     # Phase 3 reads clean_reviews.json from disk (written by Phase 2b)
