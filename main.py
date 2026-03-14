@@ -8,25 +8,7 @@ from phase2_cleaning import clean_text, filter_pii
 from phase3_theme_generation.theme_generator import generate_themes
 from phase4_grouping.theme_classifier import classify_reviews
 from phase5_note_generation.note_generator import generate_note
-from phase7_email.email_generator import generate_email_draft
-from phase7_email.gmail_client import send_via_gmail
-from phase7_email.smtp_client import send_via_smtp
-
-def send_email(note, recipient_name, recipient_email):
-    # Retrieve configuration and method
-    email_method = os.environ.get("EMAIL_METHOD", "local")
-    
-    html_body = generate_email_draft(note)
-    subject = "📋 INDMoney Weekly Product Pulse"
-    
-    if email_method == "gmail":
-        send_via_gmail(recipient_name, recipient_email, subject, html_body)
-    elif email_method == "smtp":
-        send_via_smtp(recipient_name, recipient_email, subject, html_body)
-    else:
-        # Fallback to local .eml is handled within the phase7 logic usually, 
-        # but here we just pass if local
-        print("Draft generated locally.")
+from phase7_email.email_generator import send_email
 
 def run_pipeline(recipient_name=None, recipient_email=None):
     print("Starting Weekly Pulse Pipeline...")
