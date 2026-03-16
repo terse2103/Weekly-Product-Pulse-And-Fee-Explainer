@@ -140,16 +140,31 @@
     </main>
 
     <footer class="site-footer">
-      <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Built with FastAPI &amp; Vanilla JS</p>
-      <p>
-        <a href="/docs" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
+      <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Frontend on <strong>Vercel</strong> · Backend on <strong>Streamlit Cloud</strong></p>
+      <p id="footer-links">
+        <!-- Links are updated dynamically by script.js once BACKEND_URL is known -->
+        <a id="footer-docs" href="#" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
         &nbsp;·&nbsp;
-        <a href="/api/note" target="_blank" rel="noopener" class="footer-link">Raw Note JSON</a>
+        <a id="footer-note-json" href="#" target="_blank" rel="noopener" class="footer-link">Raw Note JSON</a>
       </p>
     </footer>
 
   </div><!-- /.page-wrapper -->
 
+  <!--
+    BACKEND_URL: Set this to your Streamlit Cloud or FastAPI backend URL.
+    On Vercel this is injected via the NEXT_PUBLIC_ or VITE_ prefix; for a
+    plain static site we simply hard-code it here and replace it at deploy time
+    using a Vercel Build Command or a sed script in CI.
+
+    Replace the empty string below with your actual backend URL, e.g.:
+      window.__BACKEND_URL__ = 'https://weekly-pulse-backend.streamlit.app';
+  -->
+  <script>
+    // ⬇ Replace with your deployed Streamlit / FastAPI backend URL.
+    // Leave as '' to use relative paths (local FastAPI dev server).
+    window.__BACKEND_URL__ = '';
+  </script>
   <script src="/static/script.js"></script>
 </body>
 </html>

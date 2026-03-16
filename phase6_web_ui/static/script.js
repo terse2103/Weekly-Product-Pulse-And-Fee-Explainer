@@ -9,10 +9,17 @@
  */
 
 /* ── Constants ───────────────────────────────────────────────────── */
+// BACKEND_URL is injected by index.html for Vercel deployment
+// (window.__BACKEND_URL__ = "https://your-backend.streamlit.app")
+// Falls back to relative paths for local development with FastAPI.
+const _BASE = (typeof window.__BACKEND_URL__ !== 'undefined' && window.__BACKEND_URL__)
+  ? window.__BACKEND_URL__.replace(/\/$/, '')  // strip trailing slash
+  : '';
+
 const API = {
-  note:   '/api/note',
-  send:   '/api/send',
-  status: '/api/status',
+  note:   `${_BASE}/api/note`,
+  send:   `${_BASE}/api/send`,
+  status: `${_BASE}/api/status`,
 };
 
 /* ── DOM refs ────────────────────────────────────────────────────── */
@@ -313,6 +320,12 @@ $form.addEventListener('submit', handleSend);
 
 /* ── Init ───────────────────────────────────────────────────────── */
 (async function init() {
+  // Set footer links to point at the backend
+  const $footerDocs     = document.getElementById('footer-docs');
+  const $footerNoteJson = document.getElementById('footer-note-json');
+  if ($footerDocs)     $footerDocs.href     = `${_BASE}/docs`;
+  if ($footerNoteJson) $footerNoteJson.href = API.note;
+
   // Kick off both fetches in parallel
   await Promise.allSettled([loadNote(), loadStatus()]);
 })();

@@ -24,6 +24,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
+from dotenv import load_dotenv
+
+# Load environment variables (e.g., SMTP credentials)
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Logging

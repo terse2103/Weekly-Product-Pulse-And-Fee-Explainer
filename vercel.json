@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "weekly-product-pulse-frontend",
   "outputDirectory": "phase6_web_ui/static",
   "builds": [
     {
@@ -9,11 +10,8 @@
   ],
   "routes": [
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "https://your-backend-url.com/api/$1"
+      "src": "/static/(.*)",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
