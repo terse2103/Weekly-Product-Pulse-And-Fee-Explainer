@@ -46,8 +46,19 @@ def validate_schema(review: dict) -> bool:
             return False
     return True
 
+import langdetect
+
+def is_english(text: str) -> bool:
+    """Checks if the language of the text is English."""
+    try:
+        # Detect language; return True only if it's 'en'
+        return langdetect.detect(text) == 'en'
+    except langdetect.LangDetectException:
+        # If langdetect fails (e.g., text is just numbers/symbols), treat as non-English
+        return False
+
 def clean_reviews(reviews_data: list) -> list:
-    """Applies normalization, length filtering, and schema validation."""
+    """Applies normalization, length filtering, English filtering, and schema validation."""
     cleaned = []
     
     for review in reviews_data:
@@ -60,9 +71,11 @@ def clean_reviews(reviews_data: list) -> list:
         
         # Only keep reviews with >= 5 words post-normalization
         if is_valid_length(normalized):
-            new_review = review.copy()
-            new_review['text'] = normalized
-            cleaned.append(new_review)
+            # Only keep English reviews
+            if is_english(normalized):
+                new_review = review.copy()
+                new_review['text'] = normalized
+                cleaned.append(new_review)
             
     return cleaned
 
