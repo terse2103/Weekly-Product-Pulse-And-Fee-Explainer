@@ -17,6 +17,12 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+
 load_dotenv()
 
 # ── Page config ────────────────────────────────────────────────────────────
@@ -44,98 +50,86 @@ def read_note(path: Path) -> str:
         return f.read()
 
 
-# ── Start the FastAPI REST bridge in a background thread ────────────────────
-# This allows the Vercel static frontend to call /api/* endpoints
-# on this Streamlit Cloud deployment (port 8502 → exposed by Streamlit Cloud
-# via the forwarded URL at :8501, but REST callers reach the same host).
+# ── FastAPI REST bridge ─────────────────────────────────────────────────────
+# We define the API at the module level so uvicorn can resolve "streamlit_app:api" natively.
+
+api = FastAPI(title="Weekly Pulse REST Bridge")
+
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# ── Pipeline status (shared memory) ──────────────────────────────────────
+_status = {
+    "status": "idle",
+    "last_run": None,
+    "last_note_file": None,
+    "sent_count": 0,
+}
+
+@api.get("/api/note")
+def api_note():
+    note_path = get_latest_note()
+    if not note_path:
+        raise HTTPException(
+            status_code=404,
+            detail="No weekly note found. Run Phase 5 first to generate a note.",
+        )
+    content  = read_note(note_path)
+    filename = note_path.name
+    date_part = filename.replace("weekly_note_", "").replace(".md", "")
+    _status["last_note_file"] = filename
+    return JSONResponse({
+        "filename":   filename,
+        "date":       date_part,
+        "markdown":   content,
+        "word_count": len(content.split()),
+    })
+
+class SendRequest(BaseModel):
+    recipient_name:  str
+    recipient_email: EmailStr
+
+@api.post("/api/send")
+def api_send(body: SendRequest):
+    note_path = get_latest_note()
+    if not note_path:
+        raise HTTPException(
+            status_code=404,
+            detail="No weekly note available to send. Generate it first.",
+        )
+    try:
+        from phase7_email.email_generator import send_email  # type: ignore
+        note_content = read_note(note_path)
+        send_email(note_content, body.recipient_name, body.recipient_email)
+        delivery = "email"
+    except ImportError:
+        delivery = "stub"
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Email delivery failed: {exc}")
+
+    _status["sent_count"] += 1
+    _status["last_run"] = datetime.now().isoformat()
+    date_part = note_path.name.replace("weekly_note_", "").replace(".md", "")
+    message = (
+        f"Email {'delivered' if delivery == 'email' else 'queued (stub)'} "
+        f"to {body.recipient_email} — Weekly Pulse for {date_part}"
+    )
+    return {"status": "sent", "message": message}
+
+@api.get("/api/status")
+def api_status():
+    note_path = get_latest_note()
+    _status["last_note_file"] = note_path.name if note_path else None
+    return JSONResponse(_status)
+
 
 def _start_api_bridge():
-    """
-    Starts a small FastAPI server on port 8502 in a background thread
-    so the Vercel frontend can call /api/note, /api/send, /api/status.
-    This thread is started only once (guarded by a flag in st.session_state).
-    """
-    import uvicorn
-    from fastapi import FastAPI, HTTPException
-    from fastapi.responses import JSONResponse
-    from fastapi.middleware.cors import CORSMiddleware
-    from pydantic import BaseModel, EmailStr
-
-    api = FastAPI(title="Weekly Pulse REST Bridge")
-
-    api.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["*"],
-    )
-
-    # ── Pipeline status (shared memory) ──────────────────────────────────────
-    _status = {
-        "status": "idle",
-        "last_run": None,
-        "last_note_file": None,
-        "sent_count": 0,
-    }
-
-    @api.get("/api/note")
-    def api_note():
-        note_path = get_latest_note()
-        if not note_path:
-            raise HTTPException(
-                status_code=404,
-                detail="No weekly note found. Run Phase 5 first to generate a note.",
-            )
-        content  = read_note(note_path)
-        filename = note_path.name
-        date_part = filename.replace("weekly_note_", "").replace(".md", "")
-        _status["last_note_file"] = filename
-        return JSONResponse({
-            "filename":   filename,
-            "date":       date_part,
-            "markdown":   content,
-            "word_count": len(content.split()),
-        })
-
-    class SendRequest(BaseModel):
-        recipient_name:  str
-        recipient_email: EmailStr
-
-    @api.post("/api/send")
-    def api_send(body: SendRequest):
-        note_path = get_latest_note()
-        if not note_path:
-            raise HTTPException(
-                status_code=404,
-                detail="No weekly note available to send. Generate it first.",
-            )
-        try:
-            from phase7_email.email_generator import send_email  # type: ignore
-            note_content = read_note(note_path)
-            send_email(note_content, body.recipient_name, body.recipient_email)
-            delivery = "email"
-        except ImportError:
-            delivery = "stub"
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Email delivery failed: {exc}")
-
-        _status["sent_count"] += 1
-        _status["last_run"] = datetime.now().isoformat()
-        date_part = note_path.name.replace("weekly_note_", "").replace(".md", "")
-        message = (
-            f"Email {'delivered' if delivery == 'email' else 'queued (stub)'} "
-            f"to {body.recipient_email} — Weekly Pulse for {date_part}"
-        )
-        return {"status": "sent", "message": message}
-
-    @api.get("/api/status")
-    def api_status():
-        note_path = get_latest_note()
-        _status["last_note_file"] = note_path.name if note_path else None
-        return JSONResponse(_status)
-
+    """Starts the FastAPI server in a background thread."""
     uvicorn.run(api, host="0.0.0.0", port=8502, log_level="warning")
-
 
 # Start the REST bridge once per process
 if "api_started" not in st.session_state:
