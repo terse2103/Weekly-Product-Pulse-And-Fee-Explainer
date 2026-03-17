@@ -6,9 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV RUNNING_IN_DOCKER=true
 
-# Install system dependencies, including Nginx
+# Install system dependencies (no Nginx needed anymore)
 RUN apt-get update && apt-get install -y \
-    nginx \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -16,10 +15,10 @@ RUN apt-get update && apt-get install -y \
 # Work directory
 WORKDIR /app
 
-# Copy packages.txt and install if it exists and contains packages
+# Copy packages.txt and install any system packages listed in it
 COPY packages.txt .
 RUN if [ -s packages.txt ]; then \
-    grep -v '^#' packages.txt | xargs apt-get install -y; \
+    grep -v '^#' packages.txt | xargs apt-get install -y 2>/dev/null || true; \
     fi
 
 # Copy requirements and install python packages
@@ -29,13 +28,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Setup permissions for startup script and write logs
-RUN sed -i 's/\r$//' start.sh && \
-    chmod +x start.sh && \
-    mkdir -p /var/log/nginx && \
-    chmod -R 777 /var/log/nginx && \
-    mkdir -p output data && \
-    chmod -R 777 output data
+# Fix Windows line endings in start.sh and make it executable
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
-# Start script
+# Ensure output and data directories exist with write permissions
+RUN mkdir -p output data && chmod -R 777 output data
+
+# Start all services
 CMD ["./start.sh"]

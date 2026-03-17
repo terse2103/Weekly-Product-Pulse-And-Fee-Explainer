@@ -10,6 +10,11 @@ import os
 
 api = FastAPI(title="Weekly Pulse REST Bridge")
 
+@api.get("/")
+def root():
+    """Root endpoint — used by Railway health checks."""
+    return {"status": "ok", "service": "Weekly Pulse API"}
+
 api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
