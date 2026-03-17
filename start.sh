@@ -20,6 +20,12 @@ streamlit run streamlit_app.py \
     --server.enableCORS false \
     --server.enableXsrfProtection false &
 
+# Remove the default site configuration to prevent port 80 conflicts
+rm -f /etc/nginx/sites-enabled/default
+
+# Verify Nginx configuration is fully valid
+nginx -t
+
 # Start Nginx in foreground to keep container running
 echo "Starting Nginx on port $PORT..."
 nginx -g 'daemon off;'
