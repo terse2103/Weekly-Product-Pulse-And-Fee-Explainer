@@ -94,3 +94,7 @@ def api_status():
     note_path = get_latest_note()
     _status["last_note_file"] = note_path.name if note_path else None
     return JSONResponse(_status)
+
+@api.get("/api/health")
+def api_health():
+    return {"status": "ok"}
