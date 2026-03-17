@@ -65,8 +65,7 @@ pip install -r requirements.txt
 ### 2. Configure
 
 ```bash
-cp .env.example .env
-# Add your LLM API key (OpenAI / Gemini)
+# Add your Groq API key (GROQ_API_KEY) and SMTP credentials
 ```
 
 ### 3. Run the Pipeline
@@ -75,11 +74,14 @@ cp .env.example .env
 python main.py
 ```
 
-### 4. Launch the Web UI
+### 4. Launch the Admin Panel / REST Bridge
 
 ```bash
-python phase6_web_ui/app.py
-# Open http://localhost:5000
+# To run Streamlit Admin dashboard (spawns FastAPI background threads)
+streamlit run streamlit_app.py
+
+# To test standalone FastAPI server
+uvicorn api_server:api --host 0.0.0.0 --port 8502
 ```
 
 ### 5. Check Outputs
@@ -95,10 +97,10 @@ python phase6_web_ui/app.py
 |-----------|-----------|
 | Language | Python 3.10+ |
 | Play Store Data | `google-play-scraper` |
-| LLM | Google Gemini (`gemini-2.0-flash`) |
+| LLM | Groq (**`llama-3.3-70b-versatile`**) |
 | PII Filtering | Regex + heuristics |
-| Web Backend | Flask |
-| Web Frontend | HTML / CSS / JS |
+| Web Backend | Streamlit & FastAPI |
+| Web Frontend | Vanilla HTML / CSS / JS |
 | Email | Gmail API / SMTP |
 | Scheduler | GitHub Actions (every Sunday) |
 | Testing | `pytest` |
@@ -117,14 +119,16 @@ python phase6_web_ui/app.py
 ## Project Structure
 
 ```
+├── api_server.py                 # FastAPI REST bridge orchestrator
+├── streamlit_app.py              # Streamlit Backend Admin app
 ├── main.py                       # Pipeline orchestrator
-├── config/settings.yaml          # Configuration
+├── vercel.json                    # Static Frontend Deployment Config
 ├── phase1_ingestion/             # Fetch Play Store reviews
 ├── phase2_cleaning/              # 2a: Clean text | 2b: Strip PII
-├── phase3_theme_generation/      # LLM theme discovery
+├── phase3_theme_generation/      # Groq LLM theme discovery
 ├── phase4_grouping/              # Assign reviews to themes
 ├── phase5_note_generation/       # Generate weekly one-pager
-├── phase6_web_ui/                # Web UI + Flask backend
+├── phase6_web_ui/                # static UI + FastAPI static holder placeholder
 ├── phase7_email/                 # Email draft & delivery
 ├── phase8_scheduler/             # GitHub Actions docs
 ├── .github/workflows/            # Automated Sunday runs

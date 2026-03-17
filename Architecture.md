@@ -304,83 +304,61 @@ phase5_note_generation/
 
 ---
 
-## Phase 6 — Web UI & Backend
+## Phase 6 — Web UI & Admin Panel
 
 ### Objective
-Provide a **web interface** where the user can:
+Provide a **web interface** where administrative tasks and public read actions can be managed seamlessly:
 
-1. **View the generated weekly note** in a clean, formatted layout.
-2. **Enter recipient details** — name and email address — for sending the pulse email.
-3. **Trigger email delivery** with a single click.
+1. **Admins** can manually execute the pipeline, view latest notes, and dispatch emails.
+2. **Users** can view the generated weekly note in a clean layout with dark-mode support.
 
 ### Architecture
 
+The system operates on a **split-deployment strategy**:
+
 ```
-┌──────────────────────┐         ┌──────────────────────┐
-│   Frontend           │  HTTP   │   Backend            │
-│   (Vanilla HTML /    │◀──────▶│   (FastAPI)          │
-│    CSS / JS)         │         │                      │
-│                      │         │ • GET  /api/note     │
-│ • View note          │         │ • POST /api/send     │
-│ • Recipient form     │         │ • GET  /api/status   │
-│ • Send button        │         │ • Serves static UI   │
-└──────────────────────┘         └──────────────────────┘
+┌──────────────────────┐         ┌──────────────────────┐         ┌──────────────────────┐
+│   Public Frontend    │  HTTP   │    REST API Bridge   │  Spawn  │    Backend Admin     │
+│   (Vanilla HTML/JS)  │◀──────▶│       (FastAPI)      │◀──────▶│     (Streamlit)      │
+│                      │  CORS   │                      │ Processes│                      │
+│ • View latest note   │         │ • GET  /api/note     │         │ • Run full pipeline  │
+│ • Recipient form     │         │ • POST /api/send     │         │ • View file details  │
+│ • Deployed to Vercel │         │ • Spawned by Streamlit|         │ • Deployed Streamlit |
+└──────────────────────┘         └──────────────────────┘         └──────────────────────┘
 ```
 
-### Frontend (Vanilla HTML / CSS / JS)
+### 1. Backend Admin Support (Streamlit)
+An internal panel designed for Streamlit Cloud triggers manual override features inside `.py` scripts:
+- **Run Pipeline**: Triggers Phase 1 to Phase 5 sequential logic workflows and pushes outputs to `data/` and `output/`.
+- **Expand Note Views**: Evaluates latest generated local outputs in file buffers directly to dashboard previews.
 
-The frontend is built with **plain HTML, CSS, and JavaScript** — no frameworks, no build step.
-
-| Element | Description |
-|---------|-------------|
-| **Weekly Note Panel** | Renders the markdown note as formatted HTML |
-| **Recipient Form** | Input fields: `Recipient Name`, `Recipient Email` |
-| **Send Button** | Triggers `POST /api/send` with recipient info via `fetch()` |
-| **Status Indicator** | Shows success/error after send attempt |
-
-### Backend API (FastAPI)
-
-The backend uses **FastAPI** for async request handling, automatic OpenAPI docs, and built-in validation.
-
+### 2. REST API Bridge (`api_server.py` & FastAPI)
+Provides light REST interfaces accessible by remote public interfaces bypassing backend shells:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/` | GET | Serves the static HTML UI page |
-| `/api/note` | GET | Returns the latest weekly note (markdown or HTML) |
-| `/api/send` | POST | Accepts `{ name, email }`, triggers email delivery |
-| `/api/status` | GET | Returns pipeline run status |
+| `/api/note` | GET | Returns latest note outputs, formatted word count + markdown |
+| `/api/send` | POST | Safe endpoint creation triggering execution routines |
+| `/api/status`| GET | Standard pipeline run analytics diagnostics |
 
-**FastAPI advantages:**
-- Auto-generated Swagger docs at `/docs`
-- Pydantic request/response validation
-- Async support for non-blocking email delivery
-
-### Request / Response
-
-**`POST /api/send`**
-```json
-// Request
-{
-  "recipient_name": "Priya Sharma",
-  "recipient_email": "priya@company.com"
-}
-
-// Response (success)
-{
-  "status": "sent",
-  "message": "Email delivered to priya@company.com"
-}
-```
+### 3. Public Dashboard Frontend (Vercel)
+A lightweight Vanilla Static deploy hosted static on Vercel (`vercel.json` loads `static/` buffers):
+- Configured as dynamic templates with clean aesthetic setups using Javascript `fetch()` endpoints across CORS boundaries securely.
 
 ### Key Files
 ```
-phase6_web_ui/
-├── app.py                # FastAPI backend (API + static file serving)
-├── static/
-│   ├── index.html        # Main UI page (vanilla HTML)
-│   ├── style.css         # Styling (vanilla CSS)
-│   └── script.js         # Frontend logic (vanilla JS, fetch API)
-└── tests/
-    └── test_web.py       # API endpoint tests, form validation
+Weekly Product Pulse and Fee Explainer/
+│
+├── api_server.py                 # FastAPI REST API implementation
+├── streamlit_app.py              # Streamlit Backend Admin dashboard
+│
+├── phase6_web_ui/
+│   ├── app.py                    # Static mount alternative FastAPI runner
+│   ├── static/
+│   │   ├── index.html            # Main UI page (vanilla HTML)
+│   │   ├── style.css             # Styling (vanilla CSS, dashboard dark theme)
+│   │   └── script.js             # Frontend fetches layout CORS workflows
+│   └── tests/
+│       └── test_web.py
 ```
 
 ---
@@ -585,11 +563,12 @@ if __name__ == "__main__":
 ```
 Weekly Product Pulse and Fee Explainer/
 │
+├── api_server.py                 # FastAPI REST bridge orchestrator
+├── streamlit_app.py              # Streamlit Admin Panel dashboard & runner
 ├── main.py                       # Pipeline orchestrator
 ├── requirements.txt              # All dependencies
 ├── .env.example                  # API keys template (never commit real keys)
-├── config/
-│   └── settings.yaml             # All configuration
+├── vercel.json                    # Configuration for Vercel Static deployment
 │
 ├── phase1_ingestion/
 │   ├── __init__.py
