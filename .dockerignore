@@ -21,3 +21,6 @@ build
 *.txt
 !requirements.txt
 !packages.txt
+# Frontend static files (served by Vercel, not needed in Docker image)
+phase6_web_ui/static/
+vercel.json

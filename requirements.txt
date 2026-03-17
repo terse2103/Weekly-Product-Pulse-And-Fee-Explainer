@@ -24,6 +24,3 @@ google-auth-oauthlib>=1.1.0        # OAuth2 flow for Gmail
 
 # Phase 2 — Cleaning
 langdetect==1.0.9
-
-# Streamlit Backend
-streamlit>=1.32.0

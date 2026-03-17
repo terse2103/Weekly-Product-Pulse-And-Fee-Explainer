@@ -1,3 +1,2 @@
-# System dependencies for Streamlit Cloud deployment
-# Required to avoid issues with some Python library builds
+# System dependencies for Railway/Docker deployment
 build-essential
