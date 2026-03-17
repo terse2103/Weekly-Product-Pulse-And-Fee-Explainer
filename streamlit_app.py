@@ -60,8 +60,10 @@ def _start_api_bridge():
     )
 
 # Start the REST bridge once per process
+# Start the REST bridge once per process if not in Docker
 if "api_started" not in st.session_state:
-    _start_api_bridge()
+    if os.environ.get("RUNNING_IN_DOCKER") != "true":
+        _start_api_bridge()
     st.session_state["api_started"] = True
 # ── Streamlit UI ─────────────────────────────────────────────────────────────
 st.title("📡 Weekly Product Pulse — Backend Admin")
