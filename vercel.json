@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "weekly-product-pulse-frontend",
-  "outputDirectory": "phase6_web_ui/static",
   "builds": [
     {
       "src": "phase6_web_ui/static/**",
@@ -11,11 +10,11 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/$1"
+      "dest": "phase6_web_ui/static/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "phase6_web_ui/static/$1"
     }
   ]
 }
