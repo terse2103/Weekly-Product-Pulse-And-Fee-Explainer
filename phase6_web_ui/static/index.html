@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INDMoney Weekly Product Pulse</title>
-  <meta name="description" content="View and share the INDMoney Weekly Product Pulse — a scannable one-page summary of the latest Play Store reviews." />
+  <meta name="description"
+    content="View and share the INDMoney Weekly Product Pulse — a scannable one-page summary of the latest Play Store reviews." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <!-- marked.js — lightweight Markdown → HTML renderer (no build step needed) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
+
 <body>
 
   <!-- ─── Ambient glow blobs ────────────────────────────────────────────── -->
@@ -89,29 +94,15 @@
           <form id="send-form" novalidate>
             <div class="form-group">
               <label class="form-label" for="recipient-name">Recipient Name</label>
-              <input
-                id="recipient-name"
-                name="recipient_name"
-                type="text"
-                class="form-input"
-                placeholder="e.g. Priya Sharma"
-                autocomplete="name"
-                required
-              />
+              <input id="recipient-name" name="recipient_name" type="text" class="form-input"
+                placeholder="e.g. Priya Sharma" autocomplete="name" required />
               <span id="name-error" class="field-error" aria-live="polite"></span>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="recipient-email">Recipient Email</label>
-              <input
-                id="recipient-email"
-                name="recipient_email"
-                type="email"
-                class="form-input"
-                placeholder="e.g. priya@company.com"
-                autocomplete="email"
-                required
-              />
+              <input id="recipient-email" name="recipient_email" type="email" class="form-input"
+                placeholder="e.g. priya@company.com" autocomplete="email" required />
               <span id="email-error" class="field-error" aria-live="polite"></span>
             </div>
 
@@ -140,7 +131,8 @@
     </main>
 
     <footer class="site-footer">
-      <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Frontend on <strong>Vercel</strong> · Backend on <strong>Streamlit Cloud</strong></p>
+      <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Frontend on <strong>Vercel</strong> ·
+        Backend on <strong>Streamlit Cloud</strong></p>
       <p id="footer-links">
         <!-- Links are updated dynamically by script.js once BACKEND_URL is known -->
         <a id="footer-docs" href="#" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
@@ -163,8 +155,9 @@
   <script>
     // ⬇ Replace with your deployed Streamlit / FastAPI backend URL.
     // Leave as '' to use relative paths (local FastAPI dev server).
-    window.__BACKEND_URL__ = '';
+    window.__BACKEND_URL__ = 'https://weekly-pulse-and-fee-explainer.streamlit.app';
   </script>
   <script src="/static/script.js"></script>
 </body>
+
 </html>
