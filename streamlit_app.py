@@ -39,6 +39,19 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 
 
+def get_latest_note() -> Path | None:
+    """Return the Path to the most-recently generated weekly note, or None."""
+    pattern = str(OUTPUT_DIR / "weekly_note_*.md")
+    files = sorted(glob.glob(pattern), reverse=True)
+    return Path(files[0]) if files else None
+
+
+def read_note(path: Path) -> str:
+    """Read and return the note contents as a string."""
+    with open(path, "r", encoding="utf-8") as fh:
+        return fh.read()
+
+
 def _start_api_bridge():
     """Starts the FastAPI server in a background subprocess."""
     import subprocess
