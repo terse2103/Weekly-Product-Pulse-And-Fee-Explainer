@@ -144,8 +144,8 @@ def run_pipeline() -> None:
                     subprocess.run(["git", "config", "user.name", "Streamlit-AdminPanel"], check=True)
                     subprocess.run(["git", "config", "user.email", "admin@streamlit.app"], check=True)
                     
-                    # Add and commit
-                    subprocess.run(["git", "add", "output/latest_note.json"], check=True)
+                    # Add and commit with Force flag to bypass any .gitignore layout warnings
+                    subprocess.run(["git", "add", "-f", "output/latest_note.json"], check=True)
                     # Allow commit failure if file is unchanged (though note contents usually vary with date/counter)
                     subprocess.run(["git", "commit", "-m", "📋 Streamlit Update — latest_note.json"], check=False)
                     
