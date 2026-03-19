@@ -49,6 +49,9 @@ _status = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_latest_note() -> Path | None:
+    json_path = OUTPUT_DIR / "latest_note.json"
+    if json_path.exists():
+        return json_path
     pattern = str(OUTPUT_DIR / "weekly_note_*.md")
     files = sorted(glob.glob(pattern), reverse=True)
     return Path(files[0]) if files else None
@@ -56,7 +59,13 @@ def get_latest_note() -> Path | None:
 
 def read_note(path: Path) -> str:
     with open(path, "r", encoding="utf-8") as f:
+        # If it's the json exporter, unwrap the markdown key
+        if path.suffix == ".json":
+            return json.load(f).get("markdown", "")
         return f.read()
+
+# ── Export for Vercel Serverless Build ──
+app = api
 
 
 def _run_pipeline_task():

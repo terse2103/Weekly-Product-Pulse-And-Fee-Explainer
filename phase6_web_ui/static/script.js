@@ -21,8 +21,8 @@ const IS_STATIC_FILE = _BASE.endsWith('.json');
 
 const API = {
   note:   IS_STATIC_FILE ? _BASE : `${_BASE}/api/note`,
-  send:   `${_BASE}/api/send`,
-  status: `${_BASE}/api/status`,
+  send:   IS_STATIC_FILE ? `/api/send` : `${_BASE}/api/send`,
+  status: IS_STATIC_FILE ? `/api/status` : `${_BASE}/api/status`,
 };
 
 /* ── DOM refs ────────────────────────────────────────────────────── */
@@ -273,11 +273,6 @@ function timeSince(isoString) {
 async function handleSend(e) {
   e.preventDefault();
   $toast.hidden = true;
-
-  if (typeof IS_STATIC_FILE !== 'undefined' && IS_STATIC_FILE) {
-    showToast('error', 'Sending disabled. Please use the Streamlit Admin Panel to dispatch emails.');
-    return;
-  }
 
   if (!validateForm()) return;
 
