@@ -54,16 +54,10 @@ DATA_DIR.mkdir(exist_ok=True)
 # Background FastAPI server
 # ---------------------------------------------------------------------------
 _API_PORT = int(os.environ.get("API_PORT", 8081))
-_api_started = False
 
-
-def _start_api_server() -> None:
-    """Start the FastAPI REST server in a daemon thread (runs once per process)."""
-    global _api_started
-    if _api_started:
-        return
-    _api_started = True
-
+@st.cache_resource
+def _start_api_server() -> bool:
+    """Start the FastAPI REST server in a daemon thread (runs once per app boot)."""
     def _run() -> None:
         import uvicorn
         uvicorn.run(
@@ -75,6 +69,7 @@ def _start_api_server() -> None:
 
     t = threading.Thread(target=_run, daemon=True, name="fastapi-thread")
     t.start()
+    return True
 
 
 # Start the API server as soon as the Streamlit script loads
