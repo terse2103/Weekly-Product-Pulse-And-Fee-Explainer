@@ -242,10 +242,6 @@ with st.sidebar:
     else:
         st.info("No note generated yet. Run the pipeline first.")
 
-    st.markdown("---")
-    st.markdown(f"**REST API Port:** `{_API_PORT}`")
-    st.caption("FastAPI is running in a background thread on this container.")
-
 # ---------------------------------------------------------------------------
 # Main content
 # ---------------------------------------------------------------------------
