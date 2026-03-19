@@ -5,17 +5,9 @@
     {
       "src": "phase6_web_ui/static/**",
       "use": "@vercel/static"
-    },
-    {
-      "src": "api/**/*.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1.py"
-    },
     {
       "src": "/(.*)",
       "dest": "/phase6_web_ui/static/$1"
