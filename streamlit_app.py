@@ -133,6 +133,35 @@ def run_pipeline() -> None:
             with open(OUTPUT_DIR / "latest_note.json", "w", encoding="utf-8") as f_out:
                 json.dump(n_data, f_out, indent=2)
             _log("✔ latest_note.json exported up to date")
+
+            # ─── Push to GitHub ──────────────────────────────────────────
+            gh_token = os.environ.get("GITHUB_TOKEN")
+            if gh_token:
+                _log("▶ Found GITHUB_TOKEN. Pushing static file to GitHub master…")
+                import subprocess
+                try:
+                    # Configure git for actions
+                    subprocess.run(["git", "config", "user.name", "Streamlit-AdminPanel"], check=True)
+                    subprocess.run(["git", "config", "user.email", "admin@streamlit.app"], check=True)
+                    
+                    # Add and commit
+                    subprocess.run(["git", "add", "output/latest_note.json"], check=True)
+                    # Allow commit failure if file is unchanged (though note contents usually vary with date/counter)
+                    subprocess.run(["git", "commit", "-m", "📋 Streamlit Update — latest_note.json"], check=False)
+                    
+                    # Push using Token auth
+                    # Using a simplified push command targeting master
+                    # Standard checkout is usually clone address
+                    remote = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True).stdout.strip()
+                    if "github.com" in remote:
+                         # e.g. https://github.com/user/repo.git -> replace with token auth
+                         auth_push = remote.replace("https://", f"https://x-access-token:{gh_token}@")
+                         subprocess.run(["git", "push", auth_push, "master"], check=True)
+                    _log("✔ Sync to GitHub successful!")
+                except Exception as git_err:
+                     _log(f"⚠️ Git push failed: {git_err}")
+            else:
+                _log("ℹ️ Skipping Git push — specify GITHUB_TOKEN in your environment variables to enable auto-sync back to GitHub for Vercel.")
         # ───────────────────────────────────────────────────────────────────
 
         st.session_state.pipeline_status = "completed"
@@ -379,7 +408,7 @@ with tab_info:
 
     st.markdown("---")
     st.markdown("**Environment Variables**")
-    env_keys = ["GROQ_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER"]
+    env_keys = ["GROQ_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "GITHUB_TOKEN"]
     env_data = {k: ("✔ set" if os.environ.get(k) else "✖ not set") for k in env_keys}
     st.table(env_data)
 
@@ -390,7 +419,8 @@ with tab_info:
         Since this app runs on Streamlit Cloud, direct REST API triggers from Vercel are not supported.
         In stead, the pipeline saves a static **`output/latest_note.json`** on every run.
         
-        Point your Vercel `index.html` file path to load directly from the **GitHub Raw Layout URL**
-        for `output/latest_note.json` to keep your public dashboard in-sync.
+        **To sync it back to GitHub for Vercel automatically**:
+        1. Create a GitHub **Personal Access Token (PAT)** with `repo` scope.
+        2. Add **`GITHUB_TOKEN`** to your Streamlit Cloud **Secrets** with that token value.
         """
     )
