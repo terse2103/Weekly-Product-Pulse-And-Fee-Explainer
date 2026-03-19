@@ -3,6 +3,7 @@ __pycache__/
 .env
 data/
 output/
+!output/latest_note.json
 logs/
 .pytest_cache/
 *.txt

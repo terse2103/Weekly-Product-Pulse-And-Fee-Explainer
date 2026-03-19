@@ -51,31 +51,6 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Background FastAPI server
-# ---------------------------------------------------------------------------
-_API_PORT = int(os.environ.get("API_PORT", 8081))
-
-@st.cache_resource
-def _start_api_server() -> bool:
-    """Start the FastAPI REST server in a daemon thread (runs once per app boot)."""
-    def _run() -> None:
-        import uvicorn
-        uvicorn.run(
-            "api_server:api",
-            host="0.0.0.0",
-            port=_API_PORT,
-            log_level="warning",
-        )
-
-    t = threading.Thread(target=_run, daemon=True, name="fastapi-thread")
-    t.start()
-    return True
-
-
-# Start the API server as soon as the Streamlit script loads
-_start_api_server()
-
-# ---------------------------------------------------------------------------
 # Pipeline status (shared between UI and background tasks via st.session_state)
 # ---------------------------------------------------------------------------
 if "pipeline_status" not in st.session_state:
@@ -143,6 +118,22 @@ def run_pipeline() -> None:
         from phase5_note_generation.note_generator import generate_note
         generate_note(tagged, themes)
         _log("✔ Phase 5 complete — note written to output/")
+
+        # ─── Static JSON Export for Vercel ─────────────────────────────────
+        note_p = get_latest_note()
+        if note_p:
+            _log("▶ Exporting latest_note.json for Vercel…")
+            nc = read_note(note_p)
+            n_data = {
+                "filename": note_p.name,
+                "date": note_p.name.replace("weekly_note_", "").replace(".md", ""),
+                "markdown": nc,
+                "word_count": len(nc.split())
+            }
+            with open(OUTPUT_DIR / "latest_note.json", "w", encoding="utf-8") as f_out:
+                json.dump(n_data, f_out, indent=2)
+            _log("✔ latest_note.json exported up to date")
+        # ───────────────────────────────────────────────────────────────────
 
         st.session_state.pipeline_status = "completed"
         st.session_state.last_run = datetime.now().isoformat()
@@ -384,8 +375,7 @@ with tab_info:
         f"""
         | Component | Value |
         |-----------|-------|
-        | **Streamlit Port** | `{os.environ.get('PORT', '8080')}` (Streamlit UI) |
-        | **FastAPI Port** | `{_API_PORT}` (REST API — used by Vercel frontend) |
+        | **Platform** | Streamlit Cloud / Managed |
         | **Output directory** | `{OUTPUT_DIR.resolve()}` |
         | **Data directory** | `{DATA_DIR.resolve()}` |
         """
@@ -393,21 +383,18 @@ with tab_info:
 
     st.markdown("---")
     st.markdown("**Environment Variables**")
-    env_keys = ["GROQ_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "API_PORT"]
+    env_keys = ["GROQ_API_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER"]
     env_data = {k: ("✔ set" if os.environ.get(k) else "✖ not set") for k in env_keys}
     st.table(env_data)
 
     st.markdown("---")
-    st.markdown("**REST API Endpoints** (FastAPI on background thread)")
+    st.markdown("**Vercel Static Integration**")
     st.markdown(
         """
-        | Method | Path | Description |
-        |--------|------|-------------|
-        | GET | `/api/note` | Latest generated weekly note |
-        | POST | `/api/send` | Dispatch note via email |
-        | GET | `/api/status` | Pipeline run status |
-        | POST | `/api/run` | Trigger pipeline (async) |
-        | GET | `/api/health` | Health check |
-        | GET | `/docs` | Swagger UI |
+        Since this app runs on Streamlit Cloud, direct REST API triggers from Vercel are not supported.
+        In stead, the pipeline saves a static **`output/latest_note.json`** on every run.
+        
+        Point your Vercel `index.html` file path to load directly from the **GitHub Raw Layout URL**
+        for `output/latest_note.json` to keep your public dashboard in-sync.
         """
     )

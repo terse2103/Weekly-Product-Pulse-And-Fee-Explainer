@@ -16,8 +16,11 @@ const _BASE = (typeof window.__BACKEND_URL__ !== 'undefined' && window.__BACKEND
   ? window.__BACKEND_URL__.replace(/\/$/, '')  // strip trailing slash
   : '';
 
+// Detect if we are loading statically (e.g., from GitHub Raw JSON)
+const IS_STATIC_FILE = _BASE.endsWith('.json');
+
 const API = {
-  note:   `${_BASE}/api/note`,
+  note:   IS_STATIC_FILE ? _BASE : `${_BASE}/api/note`,
   send:   `${_BASE}/api/send`,
   status: `${_BASE}/api/status`,
 };
@@ -212,6 +215,13 @@ function renderStats(data) {
 /* ── Pipeline status ────────────────────────────────────────────── */
 
 async function loadStatus() {
+  if (typeof IS_STATIC_FILE !== 'undefined' && IS_STATIC_FILE) {
+    setStatusDot('has-note');
+    $statusLabel.textContent = 'Dashboard (Static View)';
+    $statusDetail.textContent = 'Syncs via GitHub updates.';
+    return;
+  }
+
   try {
     const res = await fetch(API.status);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -263,6 +273,11 @@ function timeSince(isoString) {
 async function handleSend(e) {
   e.preventDefault();
   $toast.hidden = true;
+
+  if (typeof IS_STATIC_FILE !== 'undefined' && IS_STATIC_FILE) {
+    showToast('error', 'Sending disabled. Please use the Streamlit Admin Panel to dispatch emails.');
+    return;
+  }
 
   if (!validateForm()) return;
 
