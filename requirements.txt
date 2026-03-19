@@ -14,6 +14,7 @@ google-genai
 groq
 
 # Phase 6 — Web UI & Backend
+streamlit>=1.32.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 email-validator>=2.1.0  # Required for Pydantic EmailStr validation

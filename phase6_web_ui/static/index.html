@@ -132,7 +132,7 @@
 
     <footer class="site-footer">
       <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Frontend on <strong>Vercel</strong> ·
-        Backend on <strong>Railway</strong></p>
+        Backend on <strong>Streamlit + Docker</strong></p>
       <p id="footer-links">
         <!-- Links are updated dynamically by script.js once BACKEND_URL is known -->
         <a id="footer-docs" href="#" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
@@ -144,18 +144,19 @@
   </div><!-- /.page-wrapper -->
 
   <!--
-    BACKEND_URL: Set this to your Streamlit Cloud or FastAPI backend URL.
-    On Vercel this is injected via the NEXT_PUBLIC_ or VITE_ prefix; for a
-    plain static site we simply hard-code it here and replace it at deploy time
-    using a Vercel Build Command or a sed script in CI.
+    BACKEND_URL: Points to the FastAPI REST thread running inside the
+    Streamlit Docker container (default port 8081).
 
-    Replace the empty string below with your actual backend URL, e.g.:
-      window.__BACKEND_URL__ = 'https://weekly-pulse-backend.streamlit.app';
+    Replace the value below with your actual deployed backend URL, e.g.:
+      window.__BACKEND_URL__ = 'https://your-docker-host.example.com:8081';
+
+    Leave as '' to use relative paths when running locally with FastAPI.
   -->
   <script>
-    // ⬇ Replace with your Railway deployed backend URL.
+    // ⬇ Replace with your Streamlit/Docker deployed backend REST API URL.
+    // Example: 'https://your-docker-host.example.com:8081'
     // Leave as '' to use relative paths (local FastAPI dev server).
-    window.__BACKEND_URL__ = 'https://weekly-product-pulse-and-fee-explainer-production.up.railway.app/';
+    window.__BACKEND_URL__ = '';
   </script>
   <script src="script.js"></script>
 </body>

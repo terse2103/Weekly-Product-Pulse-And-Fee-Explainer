@@ -5,6 +5,10 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# API_PORT — the FastAPI background thread listens on this port.
+# Streamlit will occupy the main $PORT (set by the hosting platform).
+ENV API_PORT=8081
+
 # Install minimal system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -24,8 +28,16 @@ COPY . .
 # Ensure output and data directories exist with write permissions
 RUN mkdir -p output data && chmod -R 777 output data
 
-# Expose the port Railway will assign (via $PORT env var)
+# Expose both ports:
+#   $PORT  — Streamlit UI (assigned by the hosting platform)
+#   8081   — FastAPI REST API (background thread, used by Vercel frontend)
 EXPOSE 8080
+EXPOSE 8081
 
-# Start FastAPI directly via uvicorn
-CMD uvicorn api_server:api --host 0.0.0.0 --port ${PORT:-8080} --log-level info
+# Start Streamlit; the REST API server is launched automatically via
+# a daemon thread inside streamlit_app.py.
+CMD streamlit run streamlit_app.py \
+      --server.port ${PORT:-8080} \
+      --server.address 0.0.0.0 \
+      --server.headless true \
+      --browser.gatherUsageStats false

@@ -1,7 +1,9 @@
 """
 api_server.py — Weekly Pulse REST API (FastAPI)
 ================================================
-Deployed on Railway via Docker.
+Runs as a background thread inside the Streamlit Docker container.
+Streamlit is the primary entry point (streamlit_app.py); this module is
+imported and started via uvicorn in a daemon thread on API_PORT (default 8081).
 
 Endpoints:
   GET  /           → Health check (used by Railway)

@@ -91,6 +91,59 @@ uvicorn api_server:api --host 0.0.0.0 --port 8502
 
 ---
 
+## Deployment
+
+### Architecture
+
+```
+Browser (Vercel)              Docker Container
+──────────────────            ────────────────────────────────────────
+index.html / script.js   ──▶  PORT (Streamlit UI)    ← admin panel
+                         ──▶  PORT+1/8081 (FastAPI)  ← REST API used by frontend
+```
+
+### Backend — Streamlit inside Docker
+
+`streamlit_app.py` is the entry point. It:
+1. Renders the **Streamlit admin panel** (run pipeline, preview note, send email).
+2. Starts `api_server.py` (FastAPI) in a **daemon thread** on `API_PORT` (default 8081).
+
+**Environment variables (set in your Docker host / platform):**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Streamlit UI port (set by hosting platform) |
+| `API_PORT` | `8081` | FastAPI REST API port |
+| `GROQ_API_KEY` | — | Groq/LLM API key |
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | — | SMTP username |
+| `SMTP_PASS` | — | SMTP password / app password |
+
+**Build & run locally:**
+```bash
+docker build -t weekly-pulse .
+docker run -p 8080:8080 -p 8081:8081 \
+  -e GROQ_API_KEY=your_key \
+  -e SMTP_USER=you@gmail.com \
+  -e SMTP_PASS=app_password \
+  weekly-pulse
+```
+
+### Frontend — Vercel (Static)
+
+The `phase6_web_ui/static/` directory is deployed as a static site via `vercel.json`.
+
+**After deploying the Docker backend**, update `index.html`:
+```js
+// phase6_web_ui/static/index.html
+window.__BACKEND_URL__ = 'https://your-docker-host.example.com:8081';
+```
+
+Then redeploy to Vercel (`vercel --prod`).
+
+---
+
 ## Tech Stack
 
 | Component | Technology |
