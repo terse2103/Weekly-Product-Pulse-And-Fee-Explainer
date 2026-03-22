@@ -49,7 +49,6 @@
           <h2 class="panel-title">This Week's Note</h2>
         </div>
 
-
         <!-- Skeleton loader -->
         <div id="note-skeleton" class="skeleton-wrapper" aria-live="polite" aria-label="Loading note">
           <div class="skeleton skeleton-lg"></div>
@@ -67,11 +66,11 @@
         <div id="note-error" class="empty-state" hidden>
           <span class="empty-icon" aria-hidden="true">⚠️</span>
           <p class="empty-title">Note not available</p>
-          <p class="empty-desc">Run Phase 5 to generate the weekly note first.</p>
+          <p class="empty-desc">Run the pipeline to generate the weekly note first.</p>
         </div>
       </section>
 
-      <!-- Right column: send panel -->
+      <!-- Right column: action panel -->
       <aside class="send-panel">
 
         <!-- Pipeline status card -->
@@ -84,6 +83,13 @@
             <span id="status-label" class="status-label">Checking…</span>
           </div>
           <p id="status-detail" class="status-detail"></p>
+
+          <!-- Run Pipeline button -->
+          <button id="btn-run" class="btn-run" type="button">
+            <span id="btn-run-text">🚀 Run Pipeline</span>
+            <span id="btn-run-spinner" class="spinner" hidden aria-hidden="true"></span>
+          </button>
+          <p id="run-result" class="run-result" hidden></p>
         </div>
 
         <!-- Recipient form card -->
@@ -132,9 +138,8 @@
 
     <footer class="site-footer">
       <p>Powered by <strong>Groq LLaMA 3.3 70B</strong> · Play Store data · Frontend on <strong>Vercel</strong> ·
-        Backend on <strong>Streamlit + Docker</strong></p>
+        Backend on <strong>Streamlit Cloud (FastAPI)</strong></p>
       <p id="footer-links">
-        <!-- Links are updated dynamically by script.js once BACKEND_URL is known -->
         <a id="footer-docs" href="#" target="_blank" rel="noopener" class="footer-link">API Docs (Swagger)</a>
         &nbsp;·&nbsp;
         <a id="footer-note-json" href="#" target="_blank" rel="noopener" class="footer-link">Raw Note JSON</a>
@@ -143,20 +148,11 @@
 
   </div><!-- /.page-wrapper -->
 
-  <!--
-    BACKEND_URL: Points to the FastAPI REST thread running inside the
-    Streamlit Docker container (default port 8081).
-
-    Replace the value below with your actual deployed backend URL, e.g.:
-      window.__BACKEND_URL__ = 'https://your-docker-host.example.com:8081';
-
-    Leave as '' to use relative paths when running locally with FastAPI.
-  -->
   <script>
-    // ⬇ Replace with your Streamlit/Docker deployed backend REST API URL.
-    // Example: 'https://your-docker-host.example.com:8081'
-    // Leave as '' to use relative paths (local FastAPI dev server).
-    window.__BACKEND_URL__ = 'https://raw.githubusercontent.com/terse2103/Weekly-Product-Pulse-And-Fee-Explainer/master/output/latest_note.json';
+    // ⬇ Set this to your deployed FastAPI backend URL on Streamlit Cloud.
+    // Example: 'https://your-app.streamlit.app' (where FastAPI runs on port 8000/8081)
+    // Leave as '' to use relative paths when running locally.
+    window.__BACKEND_URL__ = 'http://localhost:8000';
   </script>
   <script src="script.js"></script>
 </body>

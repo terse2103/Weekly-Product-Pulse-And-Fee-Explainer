@@ -4,7 +4,7 @@ Architecture requirements verified:
   - Themes count: between 1 and MAX_THEMES (5)
   - Each theme has a valid 'theme' label (≤ 5 words) and a 'description'
   - Batch size = 50
-  - Groq client is used (not Gemini)
+  - Groq client is used for all LLM calls
   - themes.json is produced and saved to data/
 """
 

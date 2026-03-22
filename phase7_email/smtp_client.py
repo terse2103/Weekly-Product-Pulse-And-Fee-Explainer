@@ -87,11 +87,19 @@ def send_via_smtp(
 
     # ── Send ─────────────────────────────────────────────────────────────────
     logger.info(f"[SMTP] Connecting to {host}:{port} as {user}")
-    with smtplib.SMTP(host, port) as server:
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(user, password)
-        server.sendmail(user, [recipient_email], msg.as_string())
+    
+    if port == 465:
+        # Use implicit SSL for port 465 (often required when port 587 is blocked by ISP/Firewall)
+        with smtplib.SMTP_SSL(host, port) as server:
+            server.login(user, password)
+            server.sendmail(user, [recipient_email], msg.as_string())
+    else:
+        # standard STARTTLS for port 587
+        with smtplib.SMTP(host, port) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(user, password)
+            server.sendmail(user, [recipient_email], msg.as_string())
 
     logger.info(f"[SMTP] Email delivered to {recipient_email}")

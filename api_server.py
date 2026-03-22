@@ -1,16 +1,18 @@
 """
 api_server.py — Weekly Pulse REST API (FastAPI)
 ================================================
-Runs as a background thread inside the Streamlit Docker container.
-Streamlit is the primary entry point (streamlit_app.py); this module is
-imported and started via uvicorn in a daemon thread on API_PORT (default 8081).
+This is the primary backend for the Weekly Product Pulse project.
+Deployed on Streamlit Cloud by running:
+  uvicorn api_server:api --host 0.0.0.0 --port 8000
+
+The Vercel frontend communicates directly with this backend via CORS.
 
 Endpoints:
-  GET  /           → Health check (used by Railway)
-  GET  /api/note   → Returns the latest generated weekly note
-  POST /api/send   → Dispatches the note to a recipient via email
-  GET  /api/status → Pipeline run status
+  GET  /           → Root health check
   GET  /api/health → Health check
+  GET  /api/note   → Returns the latest generated weekly note (markdown + metadata)
+  POST /api/send   → Dispatches the note to a recipient via email (Phase 7)
+  GET  /api/status → Pipeline run status (idle | running | error)
   POST /api/run    → Triggers the full pipeline (Phases 1–5) in the background
 """
 
@@ -23,12 +25,25 @@ import glob
 from datetime import datetime
 import json
 import os
+import logging
+from dotenv import load_dotenv
 
-api = FastAPI(title="Weekly Pulse REST API")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Explicitly load .env file so SMTP credentials are in os.environ
+load_dotenv()
+
+api = FastAPI(
+    title="Weekly Pulse REST API",
+    description="Backend for the INDMoney Weekly Product Pulse. Deployed on Streamlit Cloud.",
+    version="2.0.0",
+)
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Allow the Vercel frontend (and localhost for local dev) to call this API.
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # Tighten to your Vercel domain in production if desired
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -40,7 +55,7 @@ DATA_DIR.mkdir(exist_ok=True)
 
 # ── Pipeline status (in-memory) ───────────────────────────────────────────────
 _status = {
-    "status": "idle",
+    "status": "idle",          # idle | running | error: <message>
     "last_run": None,
     "last_note_file": None,
     "sent_count": 0,
@@ -49,9 +64,7 @@ _status = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_latest_note() -> Path | None:
-    json_path = OUTPUT_DIR / "latest_note.json"
-    if json_path.exists():
-        return json_path
+    """Return the most-recently generated weekly note path, or None."""
     pattern = str(OUTPUT_DIR / "weekly_note_*.md")
     files = sorted(glob.glob(pattern), reverse=True)
     return Path(files[0]) if files else None
@@ -59,13 +72,7 @@ def get_latest_note() -> Path | None:
 
 def read_note(path: Path) -> str:
     with open(path, "r", encoding="utf-8") as f:
-        # If it's the json exporter, unwrap the markdown key
-        if path.suffix == ".json":
-            return json.load(f).get("markdown", "")
         return f.read()
-
-# ── Export for Vercel Serverless Build ──
-app = api
 
 
 def _run_pipeline_task():
@@ -93,8 +100,8 @@ def _run_pipeline_task():
         from phase5_note_generation.note_generator import generate_note
         generate_note(tagged, themes)
 
-        _status["status"] = "idle"
-        _status["last_run"] = datetime.now().isoformat()
+        _status["status"]    = "idle"
+        _status["last_run"]  = datetime.now().isoformat()
 
     except Exception as exc:
         _status["status"] = f"error: {exc}"
@@ -104,7 +111,7 @@ def _run_pipeline_task():
 
 @api.get("/")
 def root():
-    """Root endpoint — used by Railway health checks."""
+    """Root endpoint — health check."""
     return {"status": "ok", "service": "Weekly Pulse API"}
 
 
@@ -115,14 +122,25 @@ def api_health():
 
 @api.get("/api/note")
 def api_note():
+    """
+    Returns the latest weekly note.
+
+    Response:
+      {
+        "filename":   "weekly_note_2026-03-20.md",
+        "date":       "2026-03-20",
+        "markdown":   "<full note content>",
+        "word_count": 198
+      }
+    """
     note_path = get_latest_note()
     if not note_path:
         raise HTTPException(
             status_code=404,
-            detail="No weekly note found. Run the pipeline first via POST /api/run.",
+            detail="No weekly note found. Use POST /api/run to generate one.",
         )
-    content  = read_note(note_path)
-    filename = note_path.name
+    content   = read_note(note_path)
+    filename  = note_path.name
     date_part = filename.replace("weekly_note_", "").replace(".md", "")
     _status["last_note_file"] = filename
     return JSONResponse({
@@ -140,6 +158,9 @@ class SendRequest(BaseModel):
 
 @api.post("/api/send")
 def api_send(body: SendRequest):
+    """
+    Accepts recipient details and dispatches the latest weekly note via email (Phase 7).
+    """
     note_path = get_latest_note()
     if not note_path:
         raise HTTPException(
@@ -149,18 +170,21 @@ def api_send(body: SendRequest):
     try:
         from phase7_email.email_generator import send_email  # type: ignore
         note_content = read_note(note_path)
-        send_email(note_content, body.recipient_name, body.recipient_email)
-        delivery = "email"
+        delivery, detail_msg = send_email(note_content, body.recipient_name, body.recipient_email)
     except ImportError:
         delivery = "stub"
+        detail_msg = "Stub delivery"
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Email delivery failed: {exc}")
 
+    if delivery == "fallback":
+        raise HTTPException(status_code=502, detail=detail_msg)
+
     _status["sent_count"] += 1
-    _status["last_run"] = datetime.now().isoformat()
+    _status["last_run"]    = datetime.now().isoformat()
     date_part = note_path.name.replace("weekly_note_", "").replace(".md", "")
     message = (
-        f"Email {'delivered' if delivery == 'email' else 'queued (stub)'} "
+        f"Email {'delivered' if delivery in ('email', 'smtp', 'gmail') else 'queued (stub)'} "
         f"to {body.recipient_email} — Weekly Pulse for {date_part}"
     )
     return {"status": "sent", "message": message}
@@ -168,6 +192,17 @@ def api_send(body: SendRequest):
 
 @api.get("/api/status")
 def api_status():
+    """
+    Returns the current pipeline run status.
+
+    Response:
+      {
+        "status":         "idle" | "running" | "error: <msg>",
+        "last_run":       "2026-03-20T10:00:00" | null,
+        "last_note_file": "weekly_note_2026-03-20.md" | null,
+        "sent_count":     3
+      }
+    """
     note_path = get_latest_note()
     _status["last_note_file"] = note_path.name if note_path else None
     return JSONResponse(_status)
@@ -177,7 +212,7 @@ def api_status():
 def api_run(background_tasks: BackgroundTasks):
     """
     Trigger the full data pipeline (Phases 1–5) asynchronously.
-    Poll GET /api/status to check when it completes.
+    Poll GET /api/status to track progress. Status returns to "idle" when done.
     """
     if _status["status"] == "running":
         raise HTTPException(status_code=409, detail="Pipeline is already running.")

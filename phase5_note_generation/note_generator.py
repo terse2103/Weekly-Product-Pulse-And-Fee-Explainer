@@ -43,7 +43,12 @@ def summarize_reviews(themed_reviews, themes):
         desc = theme_desc.get(theme_name, "")
         summary.append(f"- {theme_name}: {count} reviews. Description: {desc}")
         # Provide sample quotes for the LLM to choose from (up to 5 per theme)
-        quotes = theme_reviews.get(theme_name, [])[:5]
+        # Allow slightly longer user quotes (e.g. up to 40 words) as long as it satisfies the overall < 250 words
+        all_quotes = theme_reviews.get(theme_name, [])
+        valid_quotes = [q for q in all_quotes if len(str(q).split()) <= 40]
+        if not valid_quotes:
+            valid_quotes = all_quotes
+        quotes = valid_quotes[:5]
         for q in quotes:
             summary.append(f'  * "{q}"')
 

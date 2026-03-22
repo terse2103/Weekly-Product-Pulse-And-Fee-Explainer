@@ -268,7 +268,7 @@ def send_email(
     note_markdown: str,
     recipient_name: str,
     recipient_email: str,
-) -> None:
+) -> tuple[str, str]:
     """
     Wrap the weekly note into a professional HTML email and deliver it.
 
@@ -277,11 +277,9 @@ def send_email(
       2. SMTP       (if SMTP_HOST / SMTP_USER / SMTP_PASS env vars are set)
       3. Local .eml (fallback — always succeeds)
 
-    Parameters
-    ----------
-    note_markdown    : str — Full markdown text of the weekly note.
-    recipient_name   : str — Recipient's display name.
-    recipient_email  : str — Recipient's email address.
+    Returns
+    -------
+    tuple[str, str] — (delivery_method, detail_message)
     """
     logger.info(
         f"[Phase 7] Preparing email for {recipient_name} <{recipient_email}>"
@@ -306,8 +304,9 @@ def send_email(
                 recipient_name=recipient_name,
                 recipient_email=recipient_email,
             )
-            logger.info("[Phase 7] Gmail draft created successfully.")
-            return
+            msg = "Gmail API draft created successfully."
+            logger.info(f"[Phase 7] {msg}")
+            return ("gmail", msg)
         except Exception as exc:  # noqa: BLE001
             logger.warning(f"[Phase 7] Gmail API failed ({exc}). Falling back to SMTP.")
 
@@ -327,8 +326,9 @@ def send_email(
                 smtp_user=smtp_user,
                 smtp_pass=smtp_pass,
             )
-            logger.info("[Phase 7] Email sent via SMTP.")
-            return
+            msg = f"Email sent via SMTP to {recipient_email}."
+            logger.info(f"[Phase 7] {msg}")
+            return ("smtp", msg)
         except Exception as exc:  # noqa: BLE001
             logger.warning(f"[Phase 7] SMTP failed ({exc}). Falling back to local .eml.")
 
@@ -340,3 +340,4 @@ def send_email(
         recipient_email=recipient_email,
     )
     logger.info(f"[Phase 7] Fallback: email draft saved to {eml_path}")
+    return ("fallback", f"Failed to send email. Draft saved to {eml_path}")

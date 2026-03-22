@@ -4,25 +4,24 @@
  * Responsibilities:
  *   1. On load: fetch /api/note  → render markdown → update header badges.
  *   2. On load: fetch /api/status → update the pipeline status card.
- *   3. Refresh button: re-fetch latest note.
+ *   3. "Run Pipeline" button: POST /api/run → poll /api/status until done, then reload note.
  *   4. Send form: validate fields, POST /api/send, show toast.
  */
 
 /* ── Constants ───────────────────────────────────────────────────── */
-// BACKEND_URL is injected by index.html for Vercel deployment
-// (window.__BACKEND_URL__ = "https://your-backend.streamlit.app")
-// Falls back to relative paths for local development with FastAPI.
+// BACKEND_URL is injected by index.html for Vercel deployment.
+// Set window.__BACKEND_URL__ to your deployed FastAPI URL, e.g.:
+//   window.__BACKEND_URL__ = 'https://your-app.streamlit.app';
+// Leave as '' to use relative paths when running locally with FastAPI.
 const _BASE = (typeof window.__BACKEND_URL__ !== 'undefined' && window.__BACKEND_URL__)
   ? window.__BACKEND_URL__.replace(/\/$/, '')  // strip trailing slash
   : '';
 
-// Detect if we are loading statically (e.g., from GitHub Raw JSON)
-const IS_STATIC_FILE = _BASE.endsWith('.json');
-
 const API = {
-  note:   IS_STATIC_FILE ? _BASE : `${_BASE}/api/note`,
-  send:   IS_STATIC_FILE ? `/api/send` : `${_BASE}/api/send`,
-  status: IS_STATIC_FILE ? `/api/status` : `${_BASE}/api/status`,
+  note:   `${_BASE}/api/note`,
+  send:   `${_BASE}/api/send`,
+  status: `${_BASE}/api/status`,
+  run:    `${_BASE}/api/run`,
 };
 
 /* ── DOM refs ────────────────────────────────────────────────────── */
@@ -34,6 +33,11 @@ const $badgeDate    = document.getElementById('badge-date');
 const $statusDot    = document.getElementById('status-dot');
 const $statusLabel  = document.getElementById('status-label');
 const $statusDetail = document.getElementById('status-detail');
+
+const $btnRun       = document.getElementById('btn-run');
+const $btnRunText   = document.getElementById('btn-run-text');
+const $btnRunSpinner= document.getElementById('btn-run-spinner');
+const $runResult    = document.getElementById('run-result');
 
 const $form         = document.getElementById('send-form');
 const $inputName    = document.getElementById('recipient-name');
@@ -51,8 +55,9 @@ const $statsCard    = document.getElementById('stats-card');
 const $statsList    = document.getElementById('stats-list');
 
 /* ── State ──────────────────────────────────────────────────────── */
-let _toastTimer = null;
-let _currentNote = null;  // cached note response object
+let _toastTimer  = null;
+let _currentNote = null;   // cached note response object
+let _pollTimer   = null;   // pipeline polling interval
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 
@@ -62,14 +67,9 @@ let _currentNote = null;  // cached note response object
  */
 function renderMarkdown(md) {
   if (typeof marked !== 'undefined') {
-    // Configure marked for safe, clean output
-    marked.setOptions({
-      gfm: true,
-      breaks: true,
-    });
+    marked.setOptions({ gfm: true, breaks: true });
     return marked.parse(md);
   }
-  // Fallback: escape HTML and wrap in <pre>
   const escaped = md
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -91,7 +91,7 @@ function formatDate(dateStr) {
 }
 
 /**
- * Shows the status dot with the given class.
+ * Sets the status dot visual state.
  * @param {'idle'|'running'|'completed'|'failed'|'has-note'} state
  */
 function setStatusDot(state) {
@@ -107,8 +107,8 @@ function setStatusDot(state) {
 function showToast(type, message, duration = 5000) {
   clearTimeout(_toastTimer);
   $toast.className = `toast ${type}`;
-  $toastIcon.textContent  = type === 'success' ? '✅' : '❌';
-  $toastMsg.textContent   = message;
+  $toastIcon.textContent = type === 'success' ? '✅' : '❌';
+  $toastMsg.textContent  = message;
   $toast.hidden = false;
 
   if (duration > 0) {
@@ -133,7 +133,7 @@ function isValidEmail(val) {
 }
 
 /**
- * Validates the form; returns true if valid, false otherwise.
+ * Validates the form; returns true if valid.
  */
 function validateForm() {
   let valid = true;
@@ -156,10 +156,20 @@ function validateForm() {
   return valid;
 }
 
+/**
+ * Human-readable "X minutes ago" helper.
+ */
+function timeSince(isoString) {
+  const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (diff < 60)    return `${diff}s ago`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 /* ── Note loading ───────────────────────────────────────────────── */
 
 async function loadNote() {
-  // Show skeleton, hide others
   $noteSkeleton.hidden = false;
   $noteContent.hidden  = true;
   $noteError.hidden    = true;
@@ -171,17 +181,13 @@ async function loadNote() {
     const data = await res.json();
     _currentNote = data;
 
-    // Render markdown
     $noteContent.innerHTML = renderMarkdown(data.markdown);
     $noteSkeleton.hidden   = true;
     $noteContent.hidden    = false;
 
-    // Update header badges
-    $badgeDate.textContent  = formatDate(data.date);
+    $badgeDate.textContent = formatDate(data.date);
 
-    // Populate stats card
     renderStats(data);
-
   } catch (err) {
     console.error('Failed to load note:', err);
     $noteSkeleton.hidden = true;
@@ -190,14 +196,15 @@ async function loadNote() {
 }
 
 /**
- * Populates the quick-stats card with data extracted from the API response.
+ * Populates the quick-stats card.
  */
 function renderStats(data) {
   $statsList.innerHTML = '';
 
   const items = [
-    { key: 'Note date',   val: formatDate(data.date) },
-    { key: 'File',        val: data.filename },
+    { key: 'Note date', val: formatDate(data.date) },
+    { key: 'File',      val: data.filename },
+    { key: 'Words',     val: data.word_count },
   ];
 
   items.forEach(({ key, val }) => {
@@ -215,13 +222,6 @@ function renderStats(data) {
 /* ── Pipeline status ────────────────────────────────────────────── */
 
 async function loadStatus() {
-  if (typeof IS_STATIC_FILE !== 'undefined' && IS_STATIC_FILE) {
-    setStatusDot('has-note');
-    $statusLabel.textContent = 'Dashboard (Static View)';
-    $statusDetail.textContent = 'Syncs via GitHub updates.';
-    return;
-  }
-
   try {
     const res = await fetch(API.status);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -234,38 +234,98 @@ async function loadStatus() {
       failed:    { label: 'Pipeline failed',   dot: 'failed' },
     };
 
-    // If a note exists, show as "Note ready" even when idle
     const noteExists = !!data.last_note_file;
-    const statusKey  = noteExists && data.status === 'idle' ? 'completed' : (data.status || 'idle');
+    const isRunning  = typeof data.status === 'string' && data.status.startsWith('running');
+    const statusKey  = noteExists && !isRunning ? 'completed' : (data.status || 'idle');
     const mapped     = stateMap[statusKey] || stateMap.idle;
 
-    setStatusDot(noteExists ? 'has-note' : mapped.dot);
-    $statusLabel.textContent = noteExists ? 'Note ready' : mapped.label;
+    setStatusDot(noteExists && !isRunning ? 'has-note' : mapped.dot);
+    $statusLabel.textContent = noteExists && !isRunning ? 'Note ready' : mapped.label;
 
     if (data.last_run) {
-      const ago = timeSince(data.last_run);
-      $statusDetail.textContent = `Last run: ${ago}`;
+      $statusDetail.textContent = `Last run: ${timeSince(data.last_run)}`;
     } else if (data.last_note_file) {
       $statusDetail.textContent = `File: ${data.last_note_file}`;
     } else {
-      $statusDetail.textContent = 'Run the pipeline to generate a note.';
+      $statusDetail.textContent = 'Click "Run Pipeline" to generate a note.';
     }
+
+    return data.status;  // return raw status for polling
   } catch (err) {
     console.warn('Status fetch failed:', err);
     setStatusDot('idle');
-    $statusLabel.textContent = 'Status unavailable';
+    $statusLabel.textContent  = 'Status unavailable';
+    $statusDetail.textContent = '';
+    return 'idle';
   }
 }
 
-/**
- * Human-readable "X minutes ago" helper.
- */
-function timeSince(isoString) {
-  const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
-  if (diff < 60)    return `${diff}s ago`;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+/* ── Run Pipeline ───────────────────────────────────────────────── */
+
+async function runPipeline() {
+  // Lock button
+  $btnRun.disabled       = true;
+  $btnRunText.textContent = 'Running…';
+  $btnRunSpinner.hidden  = false;
+  $runResult.hidden      = true;
+
+  try {
+    const res = await fetch(API.run, { method: 'POST' });
+    const data = await res.json();
+
+    if (res.status === 409) {
+      // Already running
+      $runResult.textContent = '⚠️ Pipeline is already running.';
+      $runResult.className   = 'run-result error';
+      $runResult.hidden      = false;
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Failed to start pipeline.');
+    }
+
+    // Show "started" feedback
+    $runResult.textContent = '⏳ Pipeline started — this may take a few minutes.';
+    $runResult.className   = 'run-result info';
+    $runResult.hidden      = false;
+
+    // Poll /api/status every 5 seconds until done
+    clearInterval(_pollTimer);
+    setStatusDot('running');
+    $statusLabel.textContent  = 'Pipeline running…';
+    $statusDetail.textContent = 'Fetching reviews, generating themes…';
+
+    _pollTimer = setInterval(async () => {
+      const status = await loadStatus();
+      if (status && !status.startsWith('running') && status !== 'idle' || status === 'idle') {
+        // pipeline finished (back to idle means completed successfully)
+        clearInterval(_pollTimer);
+        $btnRun.disabled        = false;
+        $btnRunText.textContent = '🚀 Run Pipeline';
+        $btnRunSpinner.hidden   = true;
+
+        if (status.startsWith('error')) {
+          $runResult.textContent = `❌ Pipeline error: ${status}`;
+          $runResult.className   = 'run-result error';
+        } else {
+          $runResult.textContent = '✅ Pipeline completed! Refreshing note…';
+          $runResult.className   = 'run-result success';
+          setTimeout(() => { loadNote(); }, 800);
+        }
+        setTimeout(() => { $runResult.hidden = true; }, 7000);
+      }
+    }, 5000);
+
+  } catch (err) {
+    console.error('Run pipeline failed:', err);
+    $runResult.textContent = `❌ ${err.message}`;
+    $runResult.className   = 'run-result error';
+    $runResult.hidden      = false;
+    $btnRun.disabled        = false;
+    $btnRunText.textContent = '🚀 Run Pipeline';
+    $btnRunSpinner.hidden   = true;
+  }
 }
 
 /* ── Send form ──────────────────────────────────────────────────── */
@@ -276,7 +336,6 @@ async function handleSend(e) {
 
   if (!validateForm()) return;
 
-  // Lock UI
   $btnSend.disabled    = true;
   $btnText.textContent = 'Sending…';
   $btnSpinner.hidden   = false;
@@ -299,7 +358,6 @@ async function handleSend(e) {
       showToast('success', data.message);
       $form.reset();
       clearValidation();
-      // Refresh status after a successful send
       setTimeout(loadStatus, 600);
     } else {
       const errMsg = data.detail || data.message || 'Unknown error. Please try again.';
@@ -327,15 +385,14 @@ $inputEmail.addEventListener('input', () => {
 
 /* ── Event listeners ────────────────────────────────────────────── */
 $form.addEventListener('submit', handleSend);
+$btnRun.addEventListener('click', runPipeline);
 
 /* ── Init ───────────────────────────────────────────────────────── */
 (async function init() {
-  // Set footer links to point at the backend
   const $footerDocs     = document.getElementById('footer-docs');
   const $footerNoteJson = document.getElementById('footer-note-json');
   if ($footerDocs)     $footerDocs.href     = `${_BASE}/docs`;
-  if ($footerNoteJson) $footerNoteJson.href = API.note;
+  if ($footerNoteJson) $footerNoteJson.href  = API.note;
 
-  // Kick off both fetches in parallel
   await Promise.allSettled([loadNote(), loadStatus()]);
 })();
