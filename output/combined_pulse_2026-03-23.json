@@ -1,0 +1,31 @@
+{
+  "date": "2026-03-23",
+  "weekly_pulse": {
+    "themes": [
+      "User Experience",
+      "App Performance",
+      "Customer Support"
+    ],
+    "quotes": [
+      "it provides a lot of data and information to analyse and compare funds than any other investment app.",
+      "tablet compatibility worst. kindly update layout for tablet.",
+      "worst customer support indmoney has.. pathetic.. i want to close my account they aren't helping."
+    ],
+    "action_ideas": [
+      "Improve usability and features based on user feedback to enhance the overall user experience.",
+      "Fix technical issues and optimize the app for better performance on various devices, including tablets.",
+      "Enhance customer support by providing responsive and helpful service to address user concerns and improve their overall experience."
+    ]
+  },
+  "fee_scenario": "Mutual Fund Exit Load",
+  "explanation_bullets": [
+    "An exit load is a fee charged by a mutual fund when an investor redeems (sells) their units before a specified holding period; it is expressed as a percentage of the redemption amount.",
+    "Exit load rates and the applicable holding period vary by fund and fund house — for example, many equity mutual funds charge 1% exit load if units are redeemed within 1 year of purchase, while liquid funds typically have a graded exit load structure for very short holding periods.",
+    "The exit load is deducted from the redemption proceeds before the remaining amount is credited to the investor; funds with no exit load are described as 'nil exit load' funds, and the specific terms are disclosed in the fund's Scheme Information Document (SID)."
+  ],
+  "source_links": [
+    "https://groww.in/p/exit-load-in-mutual-funds",
+    "https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load"
+  ],
+  "last_checked": "2026-03-23"
+}
