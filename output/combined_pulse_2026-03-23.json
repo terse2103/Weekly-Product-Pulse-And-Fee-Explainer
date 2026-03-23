@@ -4,17 +4,17 @@
     "themes": [
       "User Experience",
       "App Performance",
-      "Customer Support"
+      "Other"
     ],
     "quotes": [
       "it provides a lot of data and information to analyse and compare funds than any other investment app.",
       "tablet compatibility worst. kindly update layout for tablet.",
-      "worst customer support indmoney has.. pathetic.. i want to close my account they aren't helping."
+      "why is physical silver investment getting categorised as alternate investment?"
     ],
     "action_ideas": [
-      "Improve usability and features based on user feedback to enhance the overall user experience.",
-      "Fix technical issues and optimize the app for better performance on various devices, including tablets.",
-      "Enhance customer support by providing responsive and helpful service to address user concerns and improve their overall experience."
+      "Implement usability testing to improve the overall user experience.",
+      "Conduct performance optimization to reduce technical issues and glitches.",
+      "Provide clear categorization of investment options to avoid user confusion."
     ]
   },
   "fee_scenario": "Mutual Fund Exit Load",
