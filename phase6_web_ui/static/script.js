@@ -78,6 +78,147 @@ function renderMarkdown(md) {
 }
 
 /**
+ * Post-processes the rendered note content.
+ * Finds the "Top 3 Themes" / "Top 3 themes" section and enhances each
+ * theme list item by:
+ *   1. Showing the review count as a styled bracket-badge next to the theme name.
+ *   2. Moving the description text to a separate <p> below the theme heading.
+ *
+ * Supported line formats (all produced by Phase 5):
+ *   "ThemeName: N reviews. Description text"
+ *   "ThemeName: N reviews. Description: Description text"
+ *   "**ThemeName** (N reviews): Description text"  (older format)
+ */
+function enhanceThemeSection(container) {
+  // Find the section heading that contains 'theme' (case-insensitive)
+  const headings = container.querySelectorAll('h1, h2, h3, h4');
+  let themeHeading = null;
+  for (const h of headings) {
+    if (/top.*theme/i.test(h.textContent)) {
+      themeHeading = h;
+      break;
+    }
+  }
+  if (!themeHeading) return;
+
+  // Remove leading digit (e.g. "Top 3 Themes" → "Top Themes")
+  themeHeading.textContent = themeHeading.textContent
+    .replace(/\bTop\s+\d+\s+/i, 'Top ')
+    .trim();
+
+  // The theme list is the first <ul> or <ol> after the heading
+  let sibling = themeHeading.nextElementSibling;
+  while (sibling && sibling.tagName !== 'UL' && sibling.tagName !== 'OL') {
+    sibling = sibling.nextElementSibling;
+  }
+  if (!sibling) return;
+
+  const listItems = sibling.querySelectorAll(':scope > li');
+  listItems.forEach(li => {
+    const raw = li.innerHTML; // may contain <strong> from markdown
+    const text = li.textContent.trim();
+
+    // ── Pattern A: "Theme Name: N reviews. [Description: ]Text here"
+    // e.g. "User Experience: 173 reviews. Users comment on usability."
+    const patA = /^([^:]+):\s*(\d+)\s+reviews\.\s*(?:Description:\s*)?(.*)$/i;
+
+    // ── Pattern B: Older markdown style: "Theme Name (N reviews): Description"
+    // (Note: textContent strips the <strong> tags, so we don't look for asterisks here)
+    // e.g. "User Experience (129 reviews): Users provide feedback…"
+    const patB = /^([^(]+)\s*\((\d+)\s+reviews?\):\s*(.*)$/i;
+
+    let themeName = null, reviewCount = null, description = null;
+
+    const mA = text.match(patA);
+    const mB = text.match(patB);
+
+    if (mA) {
+      themeName   = mA[1].trim();
+      reviewCount = mA[2].trim();
+      description = mA[3].trim();
+    } else if (mB) {
+      themeName   = mB[1].trim();
+      reviewCount = mB[2].trim();
+      description = mB[3].trim();
+    }
+
+    if (!themeName) return; // unrecognised format — leave untouched
+
+    // Build the enhanced inner HTML
+    const descHtml = description
+      ? `<p class="theme-desc">${description}</p>`
+      : '';
+
+    li.innerHTML = `
+      <span class="theme-header">
+        <span class="theme-name">${themeName}</span>
+        <span class="theme-review-badge">[${reviewCount} reviews]</span>
+      </span>
+      ${descHtml}
+    `;
+    li.classList.add('theme-item');
+  });
+}
+
+/**
+ * Strips leading numbers from section headings that match patterns like
+ * "3 User Quotes" → "User Quotes"  or  "3 Action Ideas" → "Action Ideas".
+ * Also highlights key financial/action keywords in fee explanation bullets.
+ */
+function enhanceOtherSections(container) {
+  // ── Strip "3" from headings like "3 User Quotes", "3 Action Ideas/Items" ──
+  const headings = container.querySelectorAll('h1, h2, h3, h4');
+  headings.forEach(h => {
+    // Remove a leading digit followed by whitespace from the visible heading
+    if (/^\d+\s+/i.test(h.textContent.trim())) {
+      h.textContent = h.textContent.trim().replace(/^\d+\s+/, '');
+    }
+  });
+
+  // ── Highlight key words in fee explanation bullet points ──────────────────
+  // Locate the fee explanation section by its heading text
+  let feeHeading = null;
+  for (const h of headings) {
+    if (/fee\s+explanation/i.test(h.textContent)) {
+      feeHeading = h;
+      break;
+    }
+  }
+  if (!feeHeading) return;
+
+  // Walk siblings until the next same-level heading or end
+  const feeLevel = parseInt(feeHeading.tagName[1], 10);
+  let el = feeHeading.nextElementSibling;
+  const FEE_KEYWORDS = [
+    'exit load', 'redemption', 'mutual fund', 'holding period',
+    'nil exit load', 'equity', 'liquid fund', 'graded', 'SID',
+    'Scheme Information Document', 'fund house', '1%', '1 year',
+    'percentage', 'proceeds',
+  ];
+
+  while (el) {
+    // Stop at the next heading of same or higher level
+    if (/^H[1-4]$/.test(el.tagName)) {
+      const lvl = parseInt(el.tagName[1], 10);
+      if (lvl <= feeLevel) break;
+    }
+    // Process list items within this element
+    const items = el.tagName === 'LI' ? [el] : [...el.querySelectorAll('li')];
+    items.forEach(li => {
+      let html = li.innerHTML;
+      FEE_KEYWORDS.forEach(kw => {
+        // Escape any regex special characters in the keyword
+        const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`(?<!<[^>]*)\\b(${escaped})\\b`, 'gi');
+        html = html.replace(re, '<mark class="fee-kw">$1</mark>');
+      });
+      li.innerHTML = html;
+    });
+    el = el.nextElementSibling;
+  }
+}
+
+/**
  * Formats a date string like "2026-03-12" → "12 Mar 2026".
  */
 function formatDate(dateStr) {
@@ -182,6 +323,10 @@ async function loadNote() {
     _currentNote = data;
 
     $noteContent.innerHTML = renderMarkdown(data.markdown);
+    // Post-process the rendered HTML to enhance the themes section
+    enhanceThemeSection($noteContent);
+    // Strip leading numbers from other section headings; highlight fee keywords
+    enhanceOtherSections($noteContent);
     $noteSkeleton.hidden   = true;
     $noteContent.hidden    = false;
 

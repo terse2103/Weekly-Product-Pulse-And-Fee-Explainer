@@ -317,6 +317,56 @@ body {
   margin: 20px 0;
 }
 
+/* ── Theme section enhancements ────────────────────────────────── */
+.theme-item {
+  margin-bottom: 20px !important;
+  list-style-type: none; /* remove default bullet as we stylize it */
+}
+.theme-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.theme-header::before {
+  content: '•';
+  color: var(--clr-primary-2);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.theme-name {
+  font-weight: 700;
+  color: var(--clr-primary-2);
+  font-size: 1.05rem;
+}
+.theme-review-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  background: rgba(100, 116, 139, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
+}
+.theme-desc {
+  margin: 0 0 0 16px !important;
+  color: var(--clr-text-subtle);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* Fee explanation keyword highlight */
+mark.fee-kw {
+  background: transparent;
+  color: var(--clr-warning);
+  font-weight: 650;
+  border-bottom: 1px dashed rgba(251, 191, 36, 0.45);
+  border-radius: 0;
+  padding: 0;
+}
+
+
 /* ── 9. Skeleton loader ───────────────────────────────────────── */
 .skeleton-wrapper { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
 .skeleton {
