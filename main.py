@@ -9,7 +9,12 @@ from phase2_cleaning.pii_filter import run_pii_filtering
 from phase3_theme_generation.theme_generator import generate_themes
 from phase4_grouping.theme_classifier import classify_reviews
 from phase5_note_generation.note_generator import generate_note
-from phase7_email.email_generator import send_email
+from phase7_email import (
+    send_email,
+    generate_fee_explanation,
+    build_combined_json,
+    append_to_gdoc,
+)
 
 def run_pipeline(recipient_name=None, recipient_email=None):
     print("Starting Weekly Pulse Pipeline...")
@@ -41,10 +46,16 @@ def run_pipeline(recipient_name=None, recipient_email=None):
     print("Phase 5: Generated weekly note.")
     
     # Phase 6 (Web UI) runs separately as a FastAPI server
+
+    print("Phase 7a & 7b: Generating fee explanation and compiling combined JSON...")
+    fee_data = generate_fee_explanation()
+    combined = build_combined_json(note, fee_data)
+    
+    append_to_gdoc(combined)
     
     if recipient_name and recipient_email:
         print(f"Phase 7: Sending email to {recipient_name} <{recipient_email}>")
-        send_email(note, recipient_name, recipient_email)  # Phase 7
+        send_email(note, recipient_name, recipient_email, fee_data=fee_data)  # Phase 7
     
     print("Pipeline execution completed successfully.")
 

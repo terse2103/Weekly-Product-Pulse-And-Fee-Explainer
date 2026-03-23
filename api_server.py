@@ -98,7 +98,13 @@ def _run_pipeline_task():
             tagged = json.load(f)
 
         from phase5_note_generation.note_generator import generate_note
-        generate_note(tagged, themes)
+        note, word_count = generate_note(tagged, themes)
+
+        from phase7_email import generate_fee_explanation, build_combined_json, append_to_gdoc
+        
+        fee_data = generate_fee_explanation()
+        combined = build_combined_json(note, fee_data)
+        append_to_gdoc(combined)
 
         _status["status"]    = "idle"
         _status["last_run"]  = datetime.now().isoformat()
@@ -168,9 +174,10 @@ def api_send(body: SendRequest):
             detail="No weekly note available to send. Run the pipeline first.",
         )
     try:
-        from phase7_email.email_generator import send_email  # type: ignore
+        from phase7_email import send_email, generate_fee_explanation
         note_content = read_note(note_path)
-        delivery, detail_msg = send_email(note_content, body.recipient_name, body.recipient_email)
+        fee_data = generate_fee_explanation()
+        delivery, detail_msg = send_email(note_content, body.recipient_name, body.recipient_email, fee_data=fee_data)
     except ImportError:
         delivery = "stub"
         detail_msg = "Stub delivery"

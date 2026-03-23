@@ -1,19 +1,20 @@
 # Weekly Product Pulse & Fee Explainer — Phase-Wise Architecture
 
-> **Goal:** Turn the last 12 weeks of INDMoney Play Store reviews into a scannable one-page weekly pulse (≤ 250 words) and a ready-to-send draft email.
+> **Goal:** Turn the last 12 weeks of INDMoney Play Store reviews into a scannable one-page weekly pulse (≤ 250 words), a ready-to-send draft email with a **Fee Explanation** appendix, and a **combined JSON record** appended to a Google Doc via MCP.
 
 ---
 
 ## High-Level System Flow
 
 ```
-┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Phase 1  │─▶│ Phase 2  │─▶│ Phase 3  │─▶│ Phase 4  │─▶│ Phase 5  │─▶│ Phase 6  │─▶│ Phase 7  │─▶│ Phase 8  │
-│  Data    │  │ Cleaning │  │LLM Theme │  │ Grouping │  │  Weekly  │  │ Web UI & │  │  Email   │  │Scheduler │
-│ Ingest   │  │  & PII   │  │Generation│  │  into    │  │  Note    │  │ Backend  │  │  Draft   │  │ (GitHub  │
-│(PlayStore│  │ Filtering│  │          │  │ Themes   │  │Generation│  │          │  │& Delivery│  │ Actions) │
-│ Reviews) │  │ (2a, 2b) │  │          │  │          │  │(One-Pager│  │          │  │          │  │          │
-└──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────────────────────────────────┐  ┌──────────┐
+│ Phase 1  │─▶│ Phase 2  │─▶│ Phase 3  │─▶│ Phase 4  │─▶│ Phase 5  │─▶│ Phase 6  │─▶│ Phase 7                                   │─▶│ Phase 8  │
+│  Data    │  │ Cleaning │  │LLM Theme │  │ Grouping │  │  Weekly  │  │ Web UI & │  │ ┌──────────────────┐ ┌──────────────────┐ │  │Scheduler │
+│ Ingest   │  │  & PII   │  │Generation│  │  into    │  │  Note    │  │ Backend  │  │ │  7a: Email Draft  │ │  7b: Combined    │ │  │ (GitHub  │
+│(PlayStore│  │ Filtering│  │          │  │ Themes   │  │Generation│  │          │  │ │  & Delivery +    │ │  JSON → Google   │ │  │ Actions) │
+│ Reviews) │  │ (2a, 2b) │  │          │  │          │  │(One-Pager│  │          │  │ │  Fee Explanation  │ │  Doc (via MCP)   │ │  │          │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │ └──────────────────┘ └──────────────────┘ │  └──────────┘
+                                                                                    └───────────────────────────────────────────┘
 ```
 
 ---
@@ -445,21 +446,90 @@ Weekly Product Pulse and Fee Explainer/
 
 ---
 
-## Phase 7 — Email Draft Generation & Delivery
+## Phase 7 — Email Draft Generation, Delivery & Fee Explanation + Google Doc Sync
 
-### Objective
-Wrap the weekly note into a **professional HTML email** and deliver it to the **recipient specified via the Web UI** (Phase 6).
+Phase 7 is split into two sub-phases:
 
-### Email Structure
+| Sub-phase | Responsibility |
+|-----------|----------------|
+| **Phase 7a** | Email draft generation (with fee explanation appendix) & delivery |
+| **Phase 7b** | Combined JSON creation & append to Google Doc via MCP |
+
+---
+
+### Phase 7a — Email Draft Generation & Delivery (with Fee Explanation)
+
+#### Objective
+Wrap the weekly note into a **professional HTML email**, append a **"Fee Explanation: Mutual Fund Exit Load"** section, and deliver it to the **recipient specified via the Web UI** (Phase 6).
+
+#### Email Structure
 
 | Part | Content |
 |------|---------|
 | **Subject** | `📋 INDMoney Weekly Product Pulse — Week of {date}` |
 | **To** | `{recipient_name} <{recipient_email}>` (from Web UI input) |
-| **Body** | Personalized greeting + full weekly note (HTML-formatted from markdown) |
+| **Body — Section 1** | Personalized greeting + full weekly note (HTML-formatted from markdown) |
+| **Body — Section 2** | Fee Explanation appendix (see below) |
 | **Plain-text fallback** | Auto-generated from HTML (tags stripped) |
 
-### Delivery Priority (Cascading Fallback)
+#### Fee Explanation Appendix
+
+Appended **after** the weekly note body inside the same email. Structure:
+
+```
+─────────────────────────────────────────────
+Fee Explanation: Mutual Fund Exit Load
+─────────────────────────────────────────────
+• Bullet 1 — factual explanation point
+• Bullet 2 — factual explanation point
+• Bullet 3 — factual explanation point
+
+Sources:
+  [1] https://groww.in/p/exit-load-in-mutual-funds
+  [2] https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load
+
+Last checked: {date}
+```
+
+**Constraints:**
+- **Neutral, facts-only tone** — no recommendations, no comparisons, no opinions.
+- **Exactly 3 bullet points** summarizing what a mutual fund exit load is.
+- **Only** the two approved sources listed above may be referenced.
+- The `Last checked` date is the pipeline run date.
+
+**Sources (hardcoded):**
+
+| # | Source URL |
+|---|------------|
+| 1 | [https://groww.in/p/exit-load-in-mutual-funds](https://groww.in/p/exit-load-in-mutual-funds) |
+| 2 | [https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load](https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load) |
+
+#### Implementation Details
+
+1. **Fee explanation generator** (`fee_explainer.py`):
+   - Generates the 3-bullet fee explanation section as a markdown block.
+   - Content is based on facts extracted from the two approved sources.
+   - Returns a structured dict: `{"fee_scenario", "explanation_bullets", "source_links", "last_checked"}`.
+
+2. **Markdown → HTML conversion** (`_markdown_to_html()`): Custom lightweight converter supporting ATX headings, bold, italic, blockquotes, unordered/ordered lists, horizontal rules, and paragraphs. No external dependency.
+
+3. **HTML email template** (`email_template.html`): Professional email template with:
+   - Gradient header band (blue theme)
+   - Personalized greeting (`{{RECIPIENT_NAME}}`)
+   - Week label (`{{WEEK_LABEL}}`)
+   - Review count (`{{REVIEW_COUNT}}`)
+   - Note body (`{{NOTE_BODY}}`)
+   - **Fee explanation section** (`{{FEE_EXPLANATION}}`)
+   - Year footer (`{{YEAR}}`)
+   - Responsive typography and card-based styling
+
+4. **Gmail API** (`gmail_client.py`): Creates a draft in the sender's Gmail Drafts folder via OAuth2. Token cached in `~/.weekly_pulse_gmail_token.json`.
+
+5. **SMTP** (`smtp_client.py`): Sends email immediately via STARTTLS. Supports Gmail SMTP (`smtp.gmail.com:587`), Outlook, or any SMTP server.
+
+6. **Local .eml fallback**: Saves a `.eml` draft file to `output/email_draft_{date}.eml`. Always succeeds.
+
+#### Delivery Priority (Cascading Fallback)
 
 | Priority | Method | Trigger Condition | Library |
 |----------|--------|-------------------|---------|
@@ -467,40 +537,115 @@ Wrap the weekly note into a **professional HTML email** and deliver it to the **
 | 2 | **SMTP** | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` env vars are set | `smtplib` (Python stdlib) |
 | 3 | **Local .eml** | Fallback — always succeeds | `email.mime` (Python stdlib) |
 
-### Implementation Details
-
-1. **Markdown → HTML conversion** (`_markdown_to_html()`): Custom lightweight converter supporting ATX headings, bold, italic, blockquotes, unordered/ordered lists, horizontal rules, and paragraphs. No external dependency.
-
-2. **HTML email template** (`email_template.html`): Professional email template with:
-   - Gradient header band (blue theme)
-   - Personalized greeting (`{{RECIPIENT_NAME}}`)
-   - Week label (`{{WEEK_LABEL}}`)
-   - Review count (`{{REVIEW_COUNT}}`)
-   - Note body (`{{NOTE_BODY}}`)
-   - Year footer (`{{YEAR}}`)
-   - Responsive typography and card-based styling
-
-3. **Gmail API** (`gmail_client.py`): Creates a draft in the sender's Gmail Drafts folder via OAuth2. Token cached in `~/.weekly_pulse_gmail_token.json`.
-
-4. **SMTP** (`smtp_client.py`): Sends email immediately via STARTTLS. Supports Gmail SMTP (`smtp.gmail.com:587`), Outlook, or any SMTP server.
-
-5. **Local .eml fallback**: Saves a `.eml` draft file to `output/email_draft_{date}.eml`. Always succeeds.
-
-### Output
+#### Output
 - Gmail draft (if Gmail API configured) **or**
 - Email sent via SMTP (if SMTP configured) **or**
 - `output/email_draft_{date}.eml` — local email file (fallback).
 
-### Key Files
+#### Key Files
 ```
 phase7_email/
-├── __init__.py           # Exports send_email, generate_email_html
-├── email_generator.py    # Main orchestrator: markdown→HTML, delivery priority cascade
+├── __init__.py           # Exports send_email, generate_email_html, generate_fee_explanation
+├── email_generator.py    # Main orchestrator: markdown→HTML, fee appendix, delivery priority cascade
+├── fee_explainer.py      # Fee Explanation generator (3 bullets, 2 sources, neutral tone)
 ├── gmail_client.py       # Gmail API integration (OAuth2 draft creation)
 ├── smtp_client.py        # SMTP delivery via STARTTLS
-├── email_template.html   # Professional HTML email template with placeholder tokens
+├── email_template.html   # Professional HTML email template with {{FEE_EXPLANATION}} placeholder
 └── tests/
-    └── test_email.py     # Subject format, body content, no PII
+    ├── test_email.py     # Subject format, body content, no PII
+    └── test_fee.py       # Fee section: 3 bullets, neutral tone, correct sources
+```
+
+---
+
+### Phase 7b — Combined JSON → Google Doc (via MCP)
+
+#### Objective
+After generating the weekly note and fee explanation, create a **combined JSON record** and append it to a **Google Doc** using **MCP (Model Context Protocol)** — no direct Google APIs or alternative methods.
+
+#### Combined JSON Schema
+
+```json
+{
+  "date": "2026-03-22",
+  "weekly_pulse": {
+    "themes": ["Theme 1", "Theme 2", "Theme 3"],
+    "quotes": ["Quote 1", "Quote 2", "Quote 3"],
+    "action_ideas": ["Action 1", "Action 2", "Action 3"]
+  },
+  "fee_scenario": "Mutual Fund Exit Load",
+  "explanation_bullets": [
+    "Fact 1...",
+    "Fact 2...",
+    "Fact 3..."
+  ],
+  "source_links": [
+    "https://groww.in/p/exit-load-in-mutual-funds",
+    "https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load"
+  ],
+  "last_checked": "2026-03-22"
+}
+```
+
+#### Field Mapping
+
+| JSON Field | Source |
+|------------|--------|
+| `date` | Pipeline run date (`YYYY-MM-DD`) |
+| `weekly_pulse.themes` | Top 3 theme labels from Phase 5 note |
+| `weekly_pulse.quotes` | 3 user quotes from Phase 5 note |
+| `weekly_pulse.action_ideas` | 3 action ideas from Phase 5 note |
+| `fee_scenario` | Always `"Mutual Fund Exit Load"` |
+| `explanation_bullets` | 3 factual bullets from `fee_explainer.py` |
+| `source_links` | The 2 approved source URLs |
+| `last_checked` | Pipeline run date (`YYYY-MM-DD`) |
+
+#### Google Doc Integration (MCP Only)
+
+| Setting | Value |
+|---------|-------|
+| **Method** | MCP (Model Context Protocol) — **no Google APIs, no service accounts, no OAuth** |
+| **Operation** | Append (add new record at the end of the doc, never overwrite) |
+| **Format** | JSON block fenced in a code block, preceded by a date header |
+| **Constraint** | Each pipeline run appends **one new entry**; historical entries are preserved |
+
+**MCP append strategy:**
+
+```
+──── 2026-03-22 ────
+```json
+{ ... combined JSON ... }
+```
+
+──── 2026-03-29 ────
+```json
+{ ... next week's combined JSON ... }
+```
+```
+
+#### Implementation Details
+
+1. **JSON assembler** (`json_assembler.py`):
+   - Receives the Phase 5 note (parsed into themes/quotes/actions) and the fee explanation dict.
+   - Builds the combined JSON object.
+   - Saves to `output/combined_pulse_{date}.json` for local backup.
+
+2. **MCP Google Doc appender** (`gdoc_mcp_appender.py`):
+   - Uses MCP tools to append the formatted JSON block to the target Google Doc.
+   - Prepends a date separator header before each entry.
+   - Logs success/failure.
+
+#### Output
+- `output/combined_pulse_{date}.json` — local backup of the combined JSON.
+- Google Doc — new entry appended at the end of the document.
+
+#### Key Files
+```
+phase7_email/
+├── json_assembler.py       # Builds the combined JSON from Phase 5 note + fee explanation
+├── gdoc_mcp_appender.py    # Appends combined JSON to Google Doc via MCP
+└── tests/
+    └── test_json_gdoc.py   # JSON schema validation, mock MCP append
 ```
 
 ---
@@ -607,6 +752,9 @@ from phase3_theme_generation.theme_generator import generate_themes
 from phase4_grouping.theme_classifier import classify_reviews
 from phase5_note_generation.note_generator import generate_note
 from phase7_email.email_generator import send_email
+from phase7_email.fee_explainer import generate_fee_explanation
+from phase7_email.json_assembler import build_combined_json
+from phase7_email.gdoc_mcp_appender import append_to_gdoc
 
 def run_pipeline(recipient_name=None, recipient_email=None):
     raw = fetch_reviews()                  # Phase 1 → data/raw_reviews.json
@@ -619,8 +767,11 @@ def run_pipeline(recipient_name=None, recipient_email=None):
     note_result = generate_note(tagged, themes)  # Phase 5 → output/weekly_note_{date}.md
     note = note_result[0]  # generate_note returns (note, word_count)
     # Phase 6 (Web UI) runs separately
+    fee_data = generate_fee_explanation()          # Phase 7a — fee explanation section
     if recipient_name and recipient_email:
-        send_email(note, recipient_name, recipient_email)  # Phase 7
+        send_email(note, recipient_name, recipient_email, fee_data=fee_data)  # Phase 7a — email with fee appendix
+    combined = build_combined_json(note, fee_data) # Phase 7b — combined JSON
+    append_to_gdoc(combined)                       # Phase 7b — append to Google Doc via MCP
 
 if __name__ == "__main__":
     # Read recipient from env (for CI/CD)
@@ -634,7 +785,9 @@ if __name__ == "__main__":
 - Phases 2a, 2b, 3, and 4 read their inputs from disk (file-based pipeline), not from function arguments.
 - Phase 5 receives `themed_reviews` and `themes` as arguments (loaded from disk by the orchestrator).
 - Phase 5 returns a `(note_markdown, word_count)` tuple.
-- Recipient info is optional — if provided, Phase 7 is triggered automatically.
+- `generate_fee_explanation()` always runs (fee data is needed for both email and combined JSON).
+- Recipient info is optional — if provided, Phase 7a email is triggered automatically (now includes fee appendix via `fee_data` kwarg).
+- Phase 7b (combined JSON + Google Doc append via MCP) always runs regardless of recipient info.
 - Creates `data/`, `output/`, and `logs/` directories on startup.
 
 ---
@@ -756,13 +909,18 @@ Weekly Product Pulse and Fee Explainer/
 │       └── test_web.py
 │
 ├── phase7_email/
-│   ├── __init__.py               # Exports send_email, generate_email_html
-│   ├── email_generator.py        # Markdown→HTML, delivery cascade (Gmail → SMTP → .eml)
+│   ├── __init__.py               # Exports send_email, generate_email_html, generate_fee_explanation
+│   ├── email_generator.py        # Markdown→HTML, fee appendix, delivery cascade (Gmail → SMTP → .eml)
+│   ├── fee_explainer.py          # Fee Explanation generator (3 bullets, 2 sources, neutral tone)
+│   ├── json_assembler.py         # Builds combined JSON from Phase 5 note + fee explanation
+│   ├── gdoc_mcp_appender.py      # Appends combined JSON to Google Doc via MCP
 │   ├── gmail_client.py           # Gmail API OAuth2 draft creation
 │   ├── smtp_client.py            # SMTP STARTTLS delivery
-│   ├── email_template.html       # Professional HTML email template (gradient header, personalization)
+│   ├── email_template.html       # Professional HTML email template (gradient header, {{FEE_EXPLANATION}})
 │   └── tests/
-│       └── test_email.py
+│       ├── test_email.py         # Subject format, body content, no PII
+│       ├── test_fee.py           # Fee section: 3 bullets, neutral tone, correct sources
+│       └── test_json_gdoc.py     # Combined JSON schema, mock MCP append
 │
 ├── phase8_scheduler/
 │   ├── docs/
@@ -786,7 +944,8 @@ Weekly Product Pulse and Fee Explainer/
 ├── output/                       # Generated final outputs (gitignored, except latest_note.json)
 │   ├── weekly_note_{date}.md     # Phase 5 output (weekly note)
 │   ├── latest_note.json          # Static JSON export for Vercel (NOT gitignored)
-│   └── email_draft_{date}.eml    # Phase 7 fallback output
+│   ├── combined_pulse_{date}.json  # Phase 7b output (combined JSON backup)
+│   └── email_draft_{date}.eml    # Phase 7a fallback output
 │
 ├── Architecture.md               # This file
 └── README.md                     # Project overview
@@ -813,6 +972,7 @@ Weekly Product Pulse and Fee Explainer/
 | Config | `python-dotenv` | Clean separation of secrets via `.env` file |
 | Testing | `pytest` + `httpx` | Standard, reliable, FastAPI TestClient support |
 | Markdown Rendering | `marked.js` (frontend) | Lightweight client-side markdown → HTML |
+| Google Doc Sync | MCP (Model Context Protocol) | Append combined JSON to Google Doc — no direct Google API, no OAuth |
 
 ---
 
@@ -831,8 +991,16 @@ graph LR
     H -->|Streamlit export| I[output/latest_note.json]
     I -->|Git push| J[GitHub Raw]
     J -->|Vercel frontend fetch| K[Browser UI]
-    K -->|Recipient info via /api/send| L[Email Generator]
-    L -->|Phase 7: Gmail API / SMTP| M[Inbox]
+    H --> P[Fee Explainer]
+    P -->|Phase 7a: fee_explainer.py| Q[Fee Explanation Data]
+    H --> L[Email Generator]
+    Q --> L
+    K -->|Recipient info via /api/send| L
+    L -->|Phase 7a: Gmail API / SMTP| M[Inbox]
+    H --> R[JSON Assembler]
+    Q --> R
+    R -->|Phase 7b: json_assembler.py| S[output/combined_pulse_date.json]
+    S -->|Phase 7b: MCP append| T[Google Doc]
     N[GitHub Actions] -->|Phase 8: Every Sunday| A
 ```
 
@@ -849,6 +1017,9 @@ graph LR
 | 5 | Review IDs anonymized | SHA-256 hash (first 10 chars) in Phase 1 |
 | 6 | English reviews only | `langdetect` filter in Phase 2a |
 | 7 | Minimum review length | ≥ 5 words filter in Phase 2a |
+| 8 | Fee explanation: neutral tone | `fee_explainer.py` — facts only, no recommendations, no comparisons |
+| 9 | Fee sources: approved list only | Only 2 hardcoded URLs (Groww, Nippon India) |
+| 10 | Google Doc sync: MCP only | `gdoc_mcp_appender.py` — no direct Google APIs or alternative methods |
 
 ---
 

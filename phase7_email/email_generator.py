@@ -1,10 +1,11 @@
 """
 phase7_email/email_generator.py
 ================================
-Phase 7 — Email Draft Generation & Delivery.
+Phase 7a — Email Draft Generation & Delivery (with Fee Explanation).
 
-Converts the markdown weekly note into a professional HTML email and delivers
-it via one of three methods, in priority order:
+Converts the markdown weekly note into a professional HTML email, appends a
+"Fee Explanation: Mutual Fund Exit Load" section, and delivers it via one of
+three methods, in priority order:
 
   1. Gmail API  (creates a draft in the sender's Drafts folder)
   2. SMTP       (sends immediately via any SMTP server)
@@ -12,8 +13,8 @@ it via one of three methods, in priority order:
 
 Public API
 ----------
-  send_email(note_markdown, recipient_name, recipient_email) → None
-  generate_email_html(note_markdown, recipient_name, week_label)  → str
+  send_email(note_markdown, recipient_name, recipient_email, fee_data=None) → tuple[str, str]
+  generate_email_html(note_markdown, recipient_name, week_label, fee_data=None) → str
 """
 
 import logging
@@ -153,15 +154,20 @@ def generate_email_html(
     note_markdown: str,
     recipient_name: str,
     week_label: str = "",
+    fee_data: dict | None = None,
 ) -> str:
     """
-    Fill the HTML email template with the weekly note content.
+    Fill the HTML email template with the weekly note content and optional
+    fee explanation appendix.
 
     Parameters
     ----------
     note_markdown   : str  — Full markdown text of the weekly note.
     recipient_name  : str  — Recipient's display name.
     week_label      : str  — Human-readable week range (e.g. "March 2–8, 2026").
+    fee_data        : dict — Output of fee_explainer.generate_fee_explanation().
+                             If None, the {{FEE_EXPLANATION}} placeholder is
+                             replaced with an empty string.
 
     Returns
     -------
@@ -181,6 +187,13 @@ def generate_email_html(
     if not week_label:
         week_label = datetime.now().strftime("Week of %B %d, %Y")
 
+    # Build fee explanation HTML (or empty string if not provided)
+    if fee_data is not None:
+        from .fee_explainer import format_fee_explanation_html
+        fee_html = format_fee_explanation_html(fee_data)
+    else:
+        fee_html = ""
+
     html = (
         template
         .replace("{{RECIPIENT_NAME}}", recipient_name)
@@ -188,6 +201,7 @@ def generate_email_html(
         .replace("{{NOTE_BODY}}", note_html)
         .replace("{{REVIEW_COUNT}}", str(review_count))
         .replace("{{YEAR}}", str(datetime.now().year))
+        .replace("{{FEE_EXPLANATION}}", fee_html)
     )
     return html
 
@@ -268,14 +282,24 @@ def send_email(
     note_markdown: str,
     recipient_name: str,
     recipient_email: str,
+    fee_data: dict | None = None,
 ) -> tuple[str, str]:
     """
-    Wrap the weekly note into a professional HTML email and deliver it.
+    Wrap the weekly note (with optional fee explanation appendix) into a
+    professional HTML email and deliver it.
 
     Delivery priority:
       1. Gmail API  (if GMAIL_CREDENTIALS env var is set)
       2. SMTP       (if SMTP_HOST / SMTP_USER / SMTP_PASS env vars are set)
       3. Local .eml (fallback — always succeeds)
+
+    Parameters
+    ----------
+    note_markdown  : str  — Full markdown text of the weekly note.
+    recipient_name : str  — Recipient's display name.
+    recipient_email: str  — Recipient's email address.
+    fee_data       : dict — Optional output of fee_explainer.generate_fee_explanation().
+                            When provided, a fee explanation section is appended to the email.
 
     Returns
     -------
@@ -291,6 +315,7 @@ def send_email(
     html_body = generate_email_html(
         note_markdown=note_markdown,
         recipient_name=recipient_name,
+        fee_data=fee_data,
     )
 
     # ── 1. Gmail API ─────────────────────────────────────────────────────────

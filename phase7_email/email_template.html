@@ -152,6 +152,59 @@
       color: #1e3a5f;
     }
 
+    /* ── Fee explanation section ─────────────────────────── */
+    .fee-section {
+      margin: 24px 0 0;
+      padding: 20px 24px;
+      background: #f0f7ff;
+      border-left: 4px solid #0d6efd;
+      border-radius: 8px;
+    }
+
+    .fee-section h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e3a5f;
+      margin: 0 0 12px;
+      border-bottom: 1px solid #bee3f8;
+      padding-bottom: 8px;
+    }
+
+    .fee-section ul {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+    }
+
+    .fee-section ul li {
+      font-size: 13px;
+      color: #2d3748;
+      padding: 7px 10px 7px 28px;
+      margin-bottom: 6px;
+      background: #fff;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .fee-section ul li::before {
+      content: "•";
+      position: absolute;
+      left: 10px;
+      color: #0d6efd;
+      font-weight: 700;
+    }
+
+    .fee-section a {
+      color: #0d6efd;
+      text-decoration: none;
+    }
+
+    .fee-section .fee-meta {
+      font-size: 11px;
+      color: #a0aec0;
+      margin: 8px 0 0;
+    }
+
     /* ── Divider ────────────────────────────────────────── */
     .divider {
       height: 1px;
@@ -215,9 +268,13 @@
       <div class="note-body">
         {{NOTE_BODY}}
       </div>
+
+      <!-- ── Fee Explanation appendix ───────────────── -->
+      {{FEE_EXPLANATION}}
     </div>
 
     <div class="divider"></div>
+
 
     <!-- ── CTA ────────────────────────────────────────── -->
     <div class="cta-section">
