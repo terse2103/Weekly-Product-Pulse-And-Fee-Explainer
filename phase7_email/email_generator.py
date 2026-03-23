@@ -53,6 +53,26 @@ def _markdown_to_html(md: str) -> str:
       - Plain paragraphs (blank-line separation)
     """
     lines = md.splitlines()
+
+    # ── Normalise known section headings regardless of LLM output variation ──
+    # Patterns: optional leading "#"s, optional leading digit, then the keyword.
+    _HEADING_NORM = [
+        # (regex pattern,  canonical replacement text)
+        (re.compile(r"^(#{1,6}\s+)\d*\s*user\s+quotes?\s*$", re.I),         r"\g<1>User Quotes"),
+        (re.compile(r"^(#{1,6}\s+)\d*\s*action\s+ideas?\s*$", re.I),        r"\g<1>Action Ideas"),
+        (re.compile(r"^(#{1,6}\s+)\d*\s*actionable\s+recommendations?\s*$", re.I), r"\g<1>Action Ideas"),
+        (re.compile(r"^(#{1,6}\s+)top\s+\d+\s+themes?\s*$", re.I),          r"\g<1>Top Themes"),
+    ]
+    normalised = []
+    for line in lines:
+        for pat, repl in _HEADING_NORM:
+            if pat.match(line.strip()):
+                line = pat.sub(repl, line.strip())
+                break
+        normalised.append(line)
+    lines = normalised
+    # ── End normalisation ────────────────────────────────────────────────────
+
     html_lines: list[str] = []
     in_ul = False
     in_ol = False

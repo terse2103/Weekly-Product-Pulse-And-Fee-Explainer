@@ -166,13 +166,26 @@ function enhanceThemeSection(container) {
  * Also highlights key financial/action keywords in fee explanation bullets.
  */
 function enhanceOtherSections(container) {
-  // ── Strip "3" from headings like "3 User Quotes", "3 Action Ideas/Items" ──
+  // ── Normalise section headings: strip leading digits AND canonical-case ──
   const headings = container.querySelectorAll('h1, h2, h3, h4');
+
+  // Map of regex → canonical display text
+  const HEADING_NORMS = [
+    { re: /^\d*\s*user\s+quotes?\s*$/i,               label: 'User Quotes' },
+    { re: /^\d*\s*action\s+ideas?\s*$/i,              label: 'Action Ideas' },
+    { re: /^\d*\s*actionable\s+recommendations?\s*$/i,label: 'Action Ideas' },
+    { re: /^top\s+\d+\s+themes?\s*$/i,               label: 'Top Themes' },
+  ];
+
   headings.forEach(h => {
-    // Remove a leading digit followed by whitespace from the visible heading
-    if (/^\d+\s+/i.test(h.textContent.trim())) {
-      h.textContent = h.textContent.trim().replace(/^\d+\s+/, '');
+    let text = h.textContent.trim();
+    // Strip a leading digit (e.g. "3 User Quotes" → "User Quotes")
+    text = text.replace(/^\d+\s+/, '');
+    // Match against known canonical forms
+    for (const { re, label } of HEADING_NORMS) {
+      if (re.test(text)) { text = label; break; }
     }
+    h.textContent = text;
   });
 
   // ── Highlight key words in fee explanation bullet points ──────────────────

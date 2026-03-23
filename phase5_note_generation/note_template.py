@@ -8,9 +8,9 @@ Constraints:
 - You can use slightly longer user quotes, as long as the overall <= 250 words constraint is satisfied.
 
 Include exactly 3 sections (after the heading):
-1. **Top 3 themes**: Include counts. It must also include a one-liner description along with the number of reviews.
-2. **3 user quotes**: Exactly 3 real user quotes (one per theme).
-3. **3 action ideas**: Exactly 3 actionable recommendations (key words should be highlighted in bold).
+1. **Top Themes**: Include counts. It must also include a one-liner description along with the number of reviews.
+2. **User Quotes**: Exactly 3 real user quotes (one per theme).
+3. **Action Ideas**: Exactly 3 actionable recommendations (key words should be highlighted in bold).
 
 In the heading, mention the exact day this note was created (Eg - Created on: 16th March, 2026).
 
