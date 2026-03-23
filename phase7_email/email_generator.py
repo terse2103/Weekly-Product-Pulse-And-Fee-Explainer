@@ -167,6 +167,162 @@ def _markdown_to_html(md: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Theme enhancement — pre-processes markdown before HTML conversion
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Patterns that match a theme list item produced by the LLM:
+#   Pattern A: "Theme Name: N reviews. [Description: ]Description text"
+#   Pattern B: "**Theme Name** (N reviews): Description text"
+_THEME_PAT_A = re.compile(
+    r"^([^:]+):\s*(\d+)\s+reviews?\.\s*(?:Description:\s*)?(.*)$", re.I
+)
+_THEME_PAT_B = re.compile(
+    r"^\*{0,2}([^*(]+?)\*{0,2}\s*\((\d+)\s+reviews?\):\s*(.*)$", re.I
+)
+
+
+def _enhance_themes_in_markdown(md: str) -> str:
+    """
+    Scan the markdown for the Top Themes section and rewrite each theme
+    list item so the HTML conversion will produce:
+      - Theme name followed by a styled [N reviews] badge
+      - Description on a new indented paragraph
+
+    The rewrite injects raw HTML into the list items; _markdown_to_html
+    preserves it because it only processes the outer Markdown structure.
+    """
+    lines = md.splitlines()
+    result: list[str] = []
+    in_theme_section = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Detect the Top Themes heading
+        if re.match(r"^#{1,6}\s+(top\s+(\d+\s+)?themes?)\s*$", stripped, re.I):
+            in_theme_section = True
+            result.append(line)
+            continue
+
+        # Any subsequent heading ends the themes section
+        if in_theme_section and re.match(r"^#{1,6}\s+", stripped):
+            in_theme_section = False
+
+        if not in_theme_section:
+            result.append(line)
+            continue
+
+        # Try to match a theme list item
+        ul_match = re.match(r"^([*\-])\s+(.*)", stripped)
+        if not ul_match:
+            result.append(line)
+            continue
+
+        bullet = ul_match.group(1)
+        content = ul_match.group(2)
+
+        m = _THEME_PAT_A.match(content) or _THEME_PAT_B.match(content)
+        if not m:
+            result.append(line)
+            continue
+
+        theme_name   = m.group(1).strip().strip("*")
+        review_count = m.group(2).strip()
+        description  = m.group(3).strip()
+
+        # Rewrite as a list item containing raw HTML for the badge + desc
+        badge = (
+            f'<span style="'
+            f'display:inline-block;'
+            f'font-size:11px;font-weight:600;'
+            f'color:#64748b;background:rgba(100,116,139,0.1);'
+            f'border:1px solid rgba(100,116,139,0.25);'
+            f'border-radius:4px;padding:1px 7px;margin-left:6px;'
+            f'vertical-align:middle;'
+            f'">[{review_count} reviews]</span>'
+        )
+        desc_html = (
+            f'<span style="'
+            f'display:block;margin-top:5px;'
+            f'font-size:12.5px;color:#64748b;font-style:italic;'
+            f'">{description}</span>'
+        ) if description else ""
+
+        result.append(
+            f"{bullet} <strong>{theme_name}</strong>{badge}{desc_html}"
+        )
+
+    return "\n".join(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fee keyword highlighting — post-processes HTML after conversion
+# ─────────────────────────────────────────────────────────────────────────────
+
+_FEE_KEYWORDS = [
+    "exit load", "redemption", "mutual fund", "holding period",
+    "nil exit load", "equity", "liquid fund", "graded",
+    "SID", "Scheme Information Document", "fund house",
+    "1%", "1 year", "percentage", "proceeds",
+]
+
+
+def _highlight_fee_keywords(html: str) -> str:
+    """
+    Wrap known fee-explanation keywords in an amber-coloured <span>
+    within the fee section list items only.
+
+    Strategy: locate the fee-section <ul> … </ul> block by looking for
+    the marker class 'fee-section', then apply keyword highlights only
+    inside that block to avoid false positives elsewhere.
+    """
+    # Isolate the fee-section div
+    fee_start = html.find('<div class="fee-section"')
+    if fee_start == -1:
+        return html  # no fee section present
+
+    # Find the closing </div> of the fee section
+    # (count opening/closing divs to handle nesting)
+    pos = fee_start
+    depth = 0
+    fee_end = -1
+    while pos < len(html):
+        if html[pos:pos+4] == "<div":
+            depth += 1
+            pos += 4
+        elif html[pos:pos+6] == "</div>":
+            depth -= 1
+            if depth == 0:
+                fee_end = pos + 6
+                break
+            pos += 6
+        else:
+            pos += 1
+
+    if fee_end == -1:
+        return html
+
+    fee_block  = html[fee_start:fee_end]
+    rest_after = html[fee_end:]
+    rest_before= html[:fee_start]
+
+    span_open  = '<span style="color:#b45309;font-weight:650;border-bottom:1px dashed rgba(180,83,9,0.4);">'  # amber-700
+    span_close = "</span>"
+
+    for kw in _FEE_KEYWORDS:
+        escaped = re.escape(kw)
+        # Only match outside existing HTML tags
+        fee_block = re.sub(
+            rf"(?<![=>])\b({escaped})\b(?![^<]*>)",
+            rf"{span_open}\1{span_close}",
+            fee_block,
+            flags=re.I,
+        )
+
+    return rest_before + fee_block + rest_after
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # HTML email assembly
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -195,7 +351,9 @@ def generate_email_html(
     """
     template = _TEMPLATE_PATH.read_text(encoding="utf-8")
 
-    note_html = _markdown_to_html(note_markdown)
+    # Pre-process: enhance theme items (review badge + description)
+    enhanced_md = _enhance_themes_in_markdown(note_markdown)
+    note_html = _markdown_to_html(enhanced_md)
 
     # Infer review count from first line if available
     review_count = "recent"
@@ -223,6 +381,8 @@ def generate_email_html(
         .replace("{{YEAR}}", str(datetime.now().year))
         .replace("{{FEE_EXPLANATION}}", fee_html)
     )
+    # Post-process: highlight fee keywords inside the fee section
+    html = _highlight_fee_keywords(html)
     return html
 
 
