@@ -1,15 +1,15 @@
 # Created on: 23rd March, 2026
 ## **Top 3 themes**
-* User Experience: 173 reviews. Users comment on the overall usability and design of the app.
-* App Performance: 121 reviews. Users experience technical issues, glitches, and slow loading times while using the app.
-* Other: 69 reviews. 
+* User Experience: 194 reviews. Users provide feedback on the app's usability, citing difficulties with navigation, features, and overall ease of use.
+* App Performance: 115 reviews. Users experience issues with the app's speed, stability, and responsiveness.
+* Customer Support: 56 reviews. Users express satisfaction or dissatisfaction with the app's customer support, including responsiveness and helpfulness.
 
 ## **3 user quotes**
-* "it provides a lot of data and information to analyse and compare funds than any other investment app."
+* "great application easy to operate and you have all the information related to investment under one roof thankyou ind money"
 * "tablet compatibility worst. kindly update layout for tablet."
-* "why is physical silver investment getting categorised as alternate investment?"
+* "worst customer support indmoney has.. pathetic.. i want to close my account they aren't helping."
 
 ## **3 action ideas**
-* Implement **usability testing** to improve the overall user experience.
-* Conduct **performance optimization** to reduce technical issues and glitches.
-* Provide **clear categorization** of investment options to avoid user confusion.
+* Improve **usability** by simplifying navigation and features.
+* Enhance **app performance** by optimizing speed, stability, and responsiveness.
+* Develop a more **responsive** and **helpful** customer support system to address user concerns.
