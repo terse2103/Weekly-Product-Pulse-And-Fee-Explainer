@@ -22,5 +22,8 @@ email-validator>=2.1.0  # Required for Pydantic EmailStr validation
 google-api-python-client>=2.100.0  # Gmail API
 google-auth-oauthlib>=1.1.0        # OAuth2 flow for Gmail
 
+# Phase 7b — Google Doc MCP Appender
+mcp>=1.0.0                          # MCP client/server for Google Doc append
+
 # Phase 2 — Cleaning
 langdetect==1.0.9
