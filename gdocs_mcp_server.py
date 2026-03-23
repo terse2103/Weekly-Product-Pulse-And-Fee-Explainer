@@ -51,10 +51,16 @@ def get_gdocs_service():
             
     # If no valid credentials, run the auth flow
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+        if creds and creds.refresh_token:
+            # Refresh whenever a refresh_token exists — even if creds.expired is False.
+            # When token.pickle is reconstructed in CI (token=None, expiry=None),
+            # creds.expired returns False because expiry is None, but the token still
+            # needs to be exchanged for a live access token via the refresh_token.
             creds.refresh(Request())
         else:
-            # We expect GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env
+            # No refresh token available — fall back to interactive browser flow.
+            # This will fail in headless CI; ensure token.pickle is reconstructed
+            # from GOOGLE_REFRESH_TOKEN secret before this code runs.
             client_config = {
                 "installed": {
                     "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
@@ -65,11 +71,11 @@ def get_gdocs_service():
             }
             if not client_config["installed"]["client_id"]:
                 raise ValueError("GOOGLE_CLIENT_ID missing from .env")
-                
+
             flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
             creds = flow.run_local_server(port=0)
-            
-        # Save credentials for future use
+
+        # Save refreshed/new credentials for future use
         with open(token_path, "wb") as token:
             pickle.dump(creds, token)
             
