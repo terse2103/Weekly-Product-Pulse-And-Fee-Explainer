@@ -12,8 +12,10 @@ httpx>=0.27.0           # Required by FastAPI TestClient
 # AI
 groq
 
-# Phase 6 — Web UI & Backend
+# Phase 6 — Streamlit UI (primary deployment target)
 streamlit>=1.32.0
+
+# Phase 6 — FastAPI backend (optional; for local api_server.py dev only)
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 email-validator>=2.1.0  # Required for Pydantic EmailStr validation
