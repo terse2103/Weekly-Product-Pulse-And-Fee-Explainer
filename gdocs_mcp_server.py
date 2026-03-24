@@ -57,10 +57,20 @@ def get_gdocs_service():
             # creds.expired returns False because expiry is None, but the token still
             # needs to be exchanged for a live access token via the refresh_token.
             creds.refresh(Request())
+        elif os.environ.get("GOOGLE_REFRESH_TOKEN") and os.environ.get("GOOGLE_CLIENT_ID"):
+            # Construct credentials manually from environment variables (headless cloud)
+            from google.oauth2.credentials import Credentials
+            creds = Credentials(
+                token=None,
+                refresh_token=os.environ.get("GOOGLE_REFRESH_TOKEN"),
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+                client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+                scopes=SCOPES
+            )
+            creds.refresh(Request())
         else:
-            # No refresh token available — fall back to interactive browser flow.
-            # This will fail in headless CI; ensure token.pickle is reconstructed
-            # from GOOGLE_REFRESH_TOKEN secret before this code runs.
+            # No refresh token available locally or in env — fall back to interactive browser flow.
             client_config = {
                 "installed": {
                     "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
