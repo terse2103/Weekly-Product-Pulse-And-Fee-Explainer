@@ -2,7 +2,9 @@
 
 > Turn **INDMoney Play Store reviews** into a **one-page weekly pulse** and a **ready-to-send email** — powered by Groq LLaMA 3.3 70B.
 
-![Demo Video](../Demo%20video.mp4)
+<video width="100%" controls>
+  <source src="https://github.com/terse2103/Weekly-Product-Pulse-And-Fee-Explainer/raw/master/Demo%20video.mp4" type="video/mp4">
+</video>
 
 ---
 
