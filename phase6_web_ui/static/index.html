@@ -149,10 +149,19 @@
   </div><!-- /.page-wrapper -->
 
   <script>
-    // ⬇ Set this to your deployed FastAPI backend URL on Streamlit Cloud.
-    // Example: 'https://your-app.streamlit.app' (where FastAPI runs on port 8000/8081)
-    // Leave as '' to use relative paths when running locally.
-    window.__BACKEND_URL__ = 'http://localhost:8000';
+    // ── Backend URL Configuration ─────────────────────────────────────────────
+    // Set this to your Streamlit Cloud deployment URL BEFORE deploying to Vercel.
+    //
+    // How to find your backend URL:
+    //   1. Deploy this repo to Streamlit Cloud (Main file: streamlit_app.py)
+    //   2. Your app URL will be: https://<your-app>.streamlit.app
+    //   3. The FastAPI backend is accessible at that same base URL on port 8000
+    //      via Streamlit's port-forwarding (e.g. https://<your-app>.streamlit.app)
+    //
+    // For local development: leave as 'http://localhost:8000'
+    // For Vercel production: replace with your Streamlit Cloud URL, e.g.:
+    //   window.__BACKEND_URL__ = 'https://weekly-pulse.streamlit.app';
+    window.__BACKEND_URL__ = 'https://weekly-pulse.streamlit.app';
   </script>
   <script src="script.js"></script>
 </body>

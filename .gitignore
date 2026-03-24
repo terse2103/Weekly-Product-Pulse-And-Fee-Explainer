@@ -9,3 +9,7 @@ logs/
 *.txt
 !requirements.txt
 !packages.txt
+
+# Streamlit secrets (keep the .example template, ignore the real one)
+.streamlit/secrets.toml
+token.pickle

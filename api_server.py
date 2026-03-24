@@ -40,10 +40,19 @@ api = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# Allow the Vercel frontend (and localhost for local dev) to call this API.
+# Restrict to the Vercel frontend URL (set VERCEL_FRONTEND_URL in Streamlit secrets).
+# Falls back to localhost for local development.
+# Example value: https://weekly-product-pulse.vercel.app
+_vercel_url = os.environ.get("VERCEL_FRONTEND_URL", "").rstrip("/")
+_allowed_origins = (
+    [_vercel_url, "http://localhost:8000", "http://localhost:3000", "http://127.0.0.1:8000"]
+    if _vercel_url
+    else ["*"]   # localhost-only fallback — safe for local dev
+)
+
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Tighten to your Vercel domain in production if desired
+    allow_origins=_allowed_origins,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )

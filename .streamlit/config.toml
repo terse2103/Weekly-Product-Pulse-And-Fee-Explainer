@@ -1,0 +1,12 @@
+[server]
+# Streamlit Cloud exposes port 8501 for the Streamlit UI;
+# our FastAPI runs on 8000 inside the same dyno.
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+# Keep the process alive even when no Streamlit browser tab is open
+# (FastAPI daemon thread will keep serving API requests)
+maxUploadSize = 10
+
+[theme]
+base = "dark"
