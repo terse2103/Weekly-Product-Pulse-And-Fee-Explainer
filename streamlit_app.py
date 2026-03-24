@@ -469,25 +469,27 @@ col_note, col_actions = st.columns([2.8, 1], gap="medium")
 
 # ── LEFT COLUMN: Note viewer ───────────────────────────────────────────────────
 with col_note:
-    st.markdown('<div class="note-panel">', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="note-panel-hdr">
-      <span class="note-panel-icon">📄</span>
-      <span class="note-panel-title">This Week's Note</span>
-    </div>""", unsafe_allow_html=True)
+    html_out = [
+        '<div class="note-panel">',
+        '  <div class="note-panel-hdr">',
+        '    <span class="note-panel-icon">📄</span>',
+        '    <span class="note-panel-title">This Week\'s Note</span>',
+        '  </div>'
+    ]
 
     if note_content:
-        html_note = md_to_html(note_content)
-        st.markdown(f'<div class="note-md">{html_note}</div>', unsafe_allow_html=True)
+        html_out.append(f'<div class="note-md">{md_to_html(note_content)}</div>')
     else:
-        st.markdown("""
+        html_out.append('''
         <div class="empty">
           <span class="empty-icon">⚠️</span>
           <p class="empty-title">Note not available</p>
           <p class="empty-desc">Run the pipeline using the button on the right to generate this week's note.</p>
-        </div>""", unsafe_allow_html=True)
+        </div>
+        ''')
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end .note-panel
+    html_out.append('</div>')
+    st.markdown('\n'.join(html_out), unsafe_allow_html=True)
 
 # ── RIGHT COLUMN: Action cards ────────────────────────────────────────────────
 with col_actions:
