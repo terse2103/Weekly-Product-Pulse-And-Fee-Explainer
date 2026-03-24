@@ -344,15 +344,31 @@ def md_to_html(md: str) -> str:
         t = re.sub(r"`(.+?)`",       r"<code>\1</code>", t)
         return t
 
+    def norm_heading(t: str) -> str:
+        """Strips leading numbers from canonical headings (e.g. 'Top 3 themes' -> 'Top Themes')"""
+        # Remove any surrounding markdown bold/italic asterisks first
+        clean = re.sub(r"^\*+|\*+$", "", t.strip())
+        
+        # Apply the substitutions on the cleaned string
+        clean = re.sub(r"(?i)^top\s+\d+\s+themes?", "Top Themes", clean)
+        clean = re.sub(r"(?i)^\d+\s+user\s+quotes?", "User Quotes", clean)
+        clean = re.sub(r"(?i)^\d+\s+action\s+(?:ideas|items|recommendations)?", "Action Ideas", clean)
+        
+        return clean
+
     lines = md.split("\n")
     out   = []
     in_ul = False
     in_ol = False
+    in_themes_section = False
 
     def close_list():
         nonlocal in_ul, in_ol
         if in_ul: out.append("</ul>"); in_ul = False
         if in_ol: out.append("</ol>"); in_ol = False
+
+    _THEME_PAT_A = re.compile(r"^([^:]+):\s*(\d+)\s+reviews?\.\s*(?:Description:\s*)?(.*)$", re.I)
+    _THEME_PAT_B = re.compile(r"^\*{0,2}([^*(]+?)\*{0,2}\s*\((\d+)\s+reviews?\):\s*(.*)$", re.I)
 
     for line in lines:
         safe    = _h.escape(line)
@@ -361,23 +377,54 @@ def md_to_html(md: str) -> str:
         # ATX headings
         if stripped.startswith("### "):
             close_list()
-            out.append(f"<h3>{inline(stripped[4:])}</h3>")
+            norm = norm_heading(stripped[4:])
+            in_themes_section = bool(re.search(r"Top Themes", norm, re.I))
+            out.append(f"<h3>{inline(norm)}</h3>")
         elif stripped.startswith("## "):
             close_list()
-            out.append(f"<h2>{inline(stripped[3:])}</h2>")
+            norm = norm_heading(stripped[3:])
+            in_themes_section = bool(re.search(r"Top Themes", norm, re.I))
+            out.append(f"<h2>{inline(norm)}</h2>")
         elif stripped.startswith("# "):
             close_list()
-            out.append(f"<h1>{inline(stripped[2:])}</h1>")
+            norm = norm_heading(stripped[2:])
+            in_themes_section = bool(re.search(r"Top Themes", norm, re.I))
+            out.append(f"<h1>{inline(norm)}</h1>")
         # Standalone bold line  →  treat as h2 (LLM pattern: **Top 3 themes**)
         elif re.fullmatch(r"\*\*[^*]+\*\*", stripped):
             close_list()
-            inner = _h.escape(line.strip()[2:-2])   # re-escape raw inner text
-            out.append(f"<h2>{inner}</h2>")
+            inner = _h.escape(line.strip()[2:-2])
+            norm = norm_heading(inner)
+            in_themes_section = bool(re.search(r"Top Themes", norm, re.I))
+            out.append(f"<h2>{norm}</h2>")
         # Unordered list
         elif stripped.startswith("- ") or stripped.startswith("* "):
             if in_ol: close_list()
             if not in_ul: out.append("<ul>"); in_ul = True
-            out.append(f"<li>{inline(stripped[2:])}</li>")
+            
+            content = stripped[2:]
+            
+            # Apply theme enhancement if we are in the themes section
+            if in_themes_section:
+                m = _THEME_PAT_A.match(content) or _THEME_PAT_B.match(content)
+                if m:
+                    theme_name   = m.group(1).strip().strip("*")
+                    review_count = m.group(2).strip()
+                    description  = m.group(3).strip()
+                    
+                    badge = (f'<span style="display:inline-block;font-size:0.75rem;font-weight:600;'
+                             f'color:var(--p2);background:rgba(99,102,241,0.15);'
+                             f'border:1px solid rgba(99,102,241,0.3);'
+                             f'border-radius:4px;padding:1px 7px;margin-left:8px;'
+                             f'vertical-align:middle;">[{review_count} reviews]</span>')
+                    desc_html = (f'<span style="display:block;margin-top:6px;font-size:0.85rem;'
+                                 f'color:var(--subtle);font-style:italic;">{inline(description)}</span>') if description else ""
+                    
+                    out.append(f"<li><strong>{theme_name}</strong>{badge}{desc_html}</li>")
+                    continue
+
+            out.append(f"<li>{inline(content)}</li>")
+
         # Ordered list
         elif re.match(r"^\d+\.\s", stripped):
             if in_ul: close_list()
