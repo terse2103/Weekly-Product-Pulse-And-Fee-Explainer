@@ -2,6 +2,8 @@
 
 > Turn **INDMoney Play Store reviews** into a **one-page weekly pulse** and a **ready-to-send email** — powered by Groq LLaMA 3.3 70B.
 
+![Demo Video](../Demo%20video.mp4)
+
 ---
 
 ## What It Does
