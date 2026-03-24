@@ -306,7 +306,7 @@ def _highlight_fee_keywords(html: str) -> str:
     rest_after = html[fee_end:]
     rest_before= html[:fee_start]
 
-    span_open  = '<span style="color:#b45309;font-weight:650;border-bottom:1px dashed rgba(180,83,9,0.4);">'  # amber-700
+    span_open  = '<span style="color:#000000;font-weight:700;border-bottom:1px dashed rgba(0,0,0,0.4);">'  # black
     span_close = "</span>"
 
     for kw in _FEE_KEYWORDS:

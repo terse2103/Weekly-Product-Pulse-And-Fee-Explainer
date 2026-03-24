@@ -526,6 +526,42 @@ with col_note:
 
     if note_content:
         html_out.append(f'<div class="note-md">{md_to_html(note_content)}</div>')
+        
+        # ── Embed Fee Explainer ───────────────────────────────────────────────
+        try:
+            combined_path = OUTPUT_DIR / f"combined_pulse_{note_date}.json"
+            if combined_path.exists():
+                cdata = json.loads(combined_path.read_text(encoding="utf-8"))
+                fee_scenario = cdata.get("fee_scenario", "Mutual Fund Exit Load")
+                bullets = cdata.get("explanation_bullets", [])
+                sources = cdata.get("source_links", [])
+                checked = cdata.get("last_checked", "")
+                
+                if bullets:
+                    bullet_items = "".join(f'<li style="margin-bottom:6px;">{b}</li>' for b in bullets)
+                    source_items = "".join(f'<li style="margin-bottom:4px;"><a href="{url}" style="color:var(--p2);text-decoration:none;">Source [{i+1}]</a></li>' for i, url in enumerate(sources))
+                    
+                    fee_html = f"""
+                    <div style="margin-top: 32px; padding: 22px 26px; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18); border-left: 4px solid var(--p1); border-radius: 12px;">
+                        <h3 style="margin: 0 0 16px; font-size: 1.05rem; font-weight: 700; color: var(--a2); display: flex; align-items: center; gap: 8px;">
+                            💡 Fee Explanation: {fee_scenario}
+                        </h3>
+                        <ul style="margin: 0 0 18px; padding-left: 20px; color: var(--text); font-size: 0.93rem; line-height: 1.6;">
+                            {bullet_items}
+                        </ul>
+                        <div style="font-size: 0.8rem; color: var(--subtle); border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 14px; margin-top: 14px;">
+                            <strong style="display:block; margin-bottom: 6px; color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">Sources</strong>
+                            <ul style="list-style: none; padding: 0; margin: 0 0 10px;">
+                                {source_items}
+                            </ul>
+                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.2);">Last checked: {checked}</span>
+                        </div>
+                    </div>
+                    """
+                    html_out.append(fee_html)
+        except Exception:
+            pass
+
     else:
         html_out.append('''
         <div class="empty">
