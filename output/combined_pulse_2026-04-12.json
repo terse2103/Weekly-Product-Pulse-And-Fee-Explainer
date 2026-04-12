@@ -1,0 +1,31 @@
+{
+  "date": "2026-04-12",
+  "weekly_pulse": {
+    "themes": [
+      "Features",
+      "User Experience",
+      "App Performance"
+    ],
+    "quotes": [
+      "please add an option on the trading chart to place trigger order using the plus button from the chart itself",
+      "excellent & superb,, very fast easy simple than others..",
+      "the worst app does unwanted changes in charts in updates. stay away as changing chart layout is the last thing a trades wants in update"
+    ],
+    "action_ideas": [
+      "Improve the app's features by adding options for trigger orders and ETF purchases.",
+      "Simplify the user experience by reducing information clustering and improving navigation.",
+      "Enhance app performance by fixing bugs, reducing delays, and preventing unwanted changes to charts."
+    ]
+  },
+  "fee_scenario": "Mutual Fund Exit Load",
+  "explanation_bullets": [
+    "An exit load is a fee charged by a mutual fund when an investor redeems (sells) their units before a specified holding period; it is expressed as a percentage of the redemption amount.",
+    "Exit load rates and the applicable holding period vary by fund and fund house — for example, many equity mutual funds charge 1% exit load if units are redeemed within 1 year of purchase, while liquid funds typically have a graded exit load structure for very short holding periods.",
+    "The exit load is deducted from the redemption proceeds before the remaining amount is credited to the investor; funds with no exit load are described as 'nil exit load' funds, and the specific terms are disclosed in the fund's Scheme Information Document (SID)."
+  ],
+  "source_links": [
+    "https://groww.in/p/exit-load-in-mutual-funds",
+    "https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load"
+  ],
+  "last_checked": "2026-04-12"
+}
