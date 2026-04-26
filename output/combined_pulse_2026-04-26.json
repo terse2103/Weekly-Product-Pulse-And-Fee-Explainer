@@ -1,0 +1,31 @@
+{
+  "date": "2026-04-26",
+  "weekly_pulse": {
+    "themes": [
+      "User Experience",
+      "App Performance",
+      "Customer Support"
+    ],
+    "quotes": [
+      "interface is complex and not good. you cannot increase font size. even if you increase phone font or zoom setting, it will not reflect here. even after complaining, it is not implemented.",
+      "some bugs are showing in the app. in the bank account every transaction shows double double and also counting the double entry.",
+      "if you are using this to trade us stocks please don't. very bad ticket resolution times. i transferred money from etrade to ind money but gets stuck for 3-4 weeks without any proper resolution."
+    ],
+    "action_ideas": [
+      "Implement font size adjustment to improve user experience.",
+      "Conduct thorough bug testing to resolve technical issues and improve app performance.",
+      "Establish a responsive customer support system to address user concerns and resolve issues in a timely manner."
+    ]
+  },
+  "fee_scenario": "Mutual Fund Exit Load",
+  "explanation_bullets": [
+    "An exit load is a fee charged by a mutual fund when an investor redeems (sells) their units before a specified holding period; it is expressed as a percentage of the redemption amount.",
+    "Exit load rates and the applicable holding period vary by fund and fund house — for example, many equity mutual funds charge 1% exit load if units are redeemed within 1 year of purchase, while liquid funds typically have a graded exit load structure for very short holding periods.",
+    "The exit load is deducted from the redemption proceeds before the remaining amount is credited to the investor; funds with no exit load are described as 'nil exit load' funds, and the specific terms are disclosed in the fund's Scheme Information Document (SID)."
+  ],
+  "source_links": [
+    "https://groww.in/p/exit-load-in-mutual-funds",
+    "https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load"
+  ],
+  "last_checked": "2026-04-26"
+}
