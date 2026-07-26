@@ -1,0 +1,31 @@
+{
+  "date": "2026-07-26",
+  "weekly_pulse": {
+    "themes": [
+      "Investment Features",
+      "App Performance",
+      "User Experience"
+    ],
+    "quotes": [
+      "good and honest way to envesting for wealth growth",
+      "this app is showing wrong conversion rate in us stocks and last 2 week it's shows wrong value. very worst app.",
+      "great app for investment but please make it suitable for tablet interface. as it doesn't show proper data in tablet."
+    ],
+    "action_ideas": [
+      "Improve investment features by adding more options and increasing transparency in investment details.",
+      "Enhance app performance by optimizing speed, stability, and responsiveness to prevent freezing and delays.",
+      "Redesign the user interface to make it more intuitive and user-friendly, with clear navigation and minimal UI changes."
+    ]
+  },
+  "fee_scenario": "Mutual Fund Exit Load",
+  "explanation_bullets": [
+    "An exit load is a fee charged by a mutual fund when an investor redeems (sells) their units before a specified holding period; it is expressed as a percentage of the redemption amount.",
+    "Exit load rates and the applicable holding period vary by fund and fund house — for example, many equity mutual funds charge 1% exit load if units are redeemed within 1 year of purchase, while liquid funds typically have a graded exit load structure for very short holding periods.",
+    "The exit load is deducted from the redemption proceeds before the remaining amount is credited to the investor; funds with no exit load are described as 'nil exit load' funds, and the specific terms are disclosed in the fund's Scheme Information Document (SID)."
+  ],
+  "source_links": [
+    "https://groww.in/p/exit-load-in-mutual-funds",
+    "https://mf.nipponindiaim.com/investoreducation/financial-term-of-the-week-exit-load"
+  ],
+  "last_checked": "2026-07-26"
+}
